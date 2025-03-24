@@ -495,17 +495,37 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             const modules = getModules();
             const Platform = modules.Platform;
 
+            // Create a new headers object of the correct type
+            const headers: Record<string, string> = {};
+
+            // Copy existing headers if any
+            if (options?.headers) {
+              if (options.headers instanceof Headers) {
+                options.headers.forEach((value: string, key: string) => {
+                  headers[key] = value;
+                });
+              } else if (Array.isArray(options.headers)) {
+                options.headers.forEach(([key, value]: [string, string]) => {
+                  headers[key] = value;
+                });
+              } else if (typeof options.headers === "object") {
+                Object.assign(headers, options.headers);
+              }
+            }
+
+            // Add custom headers
+            headers["X-Client-Type"] = "expo-passkey";
+            headers["X-Client-Version"] = "1.0.0";
+            headers["X-Platform"] = Platform.OS || "unknown";
+            headers["X-Platform-Version"] = (
+              Platform.Version || "0"
+            ).toString();
+
             return {
               url,
               options: {
                 ...options,
-                headers: {
-                  ...options?.headers,
-                  "X-Client-Type": "expo-passkey",
-                  "X-Client-Version": "1.0.0",
-                  "X-Platform": Platform.OS || "unknown",
-                  "X-Platform-Version": (Platform.Version || "0").toString(),
-                },
+                headers,
               },
             };
           } catch (error) {
