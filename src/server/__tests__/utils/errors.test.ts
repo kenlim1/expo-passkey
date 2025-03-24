@@ -1,8 +1,12 @@
-import { ERROR_CODES, ERROR_MESSAGES, PasskeyError } from '../../../types/errors';
+import {
+  ERROR_CODES,
+  ERROR_MESSAGES,
+  PasskeyError,
+} from "../../../types/errors";
 
-describe('Error types', () => {
-  describe('ERROR_CODES', () => {
-    it('should contain all necessary error codes', () => {
+describe("Error types", () => {
+  describe("ERROR_CODES", () => {
+    it("should contain all necessary error codes", () => {
       // Check environment error codes
       expect(ERROR_CODES.ENVIRONMENT.NOT_SUPPORTED).toBeDefined();
       expect(ERROR_CODES.ENVIRONMENT.MODULE_NOT_FOUND).toBeDefined();
@@ -32,8 +36,8 @@ describe('Error types', () => {
     });
   });
 
-  describe('ERROR_MESSAGES', () => {
-    it('should have a corresponding message for each error code', () => {
+  describe("ERROR_MESSAGES", () => {
+    it("should have a corresponding message for each error code", () => {
       // Check that we have messages for all error codes
       const allErrorCodes = [
         ...Object.values(ERROR_CODES.ENVIRONMENT),
@@ -45,35 +49,40 @@ describe('Error types', () => {
 
       allErrorCodes.forEach((code) => {
         expect(ERROR_MESSAGES[code]).toBeDefined();
-        expect(typeof ERROR_MESSAGES[code]).toBe('string');
+        expect(typeof ERROR_MESSAGES[code]).toBe("string");
       });
     });
   });
 
-  describe('PasskeyError', () => {
-    it('should create an error with the proper code and message', () => {
+  describe("PasskeyError", () => {
+    it("should create an error with the proper code and message", () => {
       const error = new PasskeyError(ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND);
 
       expect(error).toBeInstanceOf(Error);
-      expect(error.name).toBe('PasskeyError');
+      expect(error.name).toBe("PasskeyError");
       expect(error.code).toBe(ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND);
-      expect(error.message).toBe(ERROR_MESSAGES[ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND]);
+      expect(error.message).toBe(
+        ERROR_MESSAGES[ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND],
+      );
     });
 
-    it('should allow custom message override', () => {
-      const customMessage = 'Custom error message';
-      const error = new PasskeyError(ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND, customMessage);
+    it("should allow custom message override", () => {
+      const customMessage = "Custom error message";
+      const error = new PasskeyError(
+        ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND,
+        customMessage,
+      );
 
       expect(error.code).toBe(ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND);
       expect(error.message).toBe(customMessage);
     });
 
-    it('should handle unknown error codes gracefully', () => {
-      const unknownCode = 'unknown_code';
+    it("should handle unknown error codes gracefully", () => {
+      const unknownCode = "unknown_code";
       const error = new PasskeyError(unknownCode as any);
 
       expect(error.code).toBe(unknownCode);
-      expect(error.message).toBe('Unknown error');
+      expect(error.message).toBe("Unknown error");
     });
   });
 });

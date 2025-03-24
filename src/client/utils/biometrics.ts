@@ -3,11 +3,11 @@
  * @module expo-passkey/client/utils/biometrics
  */
 
-import type { AuthOptions, BiometricSupportInfo } from '../../types';
-import { ERROR_CODES, PasskeyError } from '../../types/errors';
-import { isSupportedPlatform } from './environment';
+import type { AuthOptions, BiometricSupportInfo } from "../../types";
+import { ERROR_CODES, PasskeyError } from "../../types/errors";
+import { isSupportedPlatform } from "./environment";
 
-import { loadExpoModules } from './modules';
+import { loadExpoModules } from "./modules";
 
 // Helper function to get modules only when needed
 function getModules() {
@@ -24,37 +24,39 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
 
     const isSupported = await LocalAuthentication.hasHardwareAsync();
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    const availableTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    const availableTypes =
+      await LocalAuthentication.supportedAuthenticationTypesAsync();
 
     const platformDetails = {
       platform: Platform.OS,
       version: Platform.Version,
-      apiLevel: Platform.OS === 'android' ? Device.platformApiLevel : undefined,
-      manufacturer: Platform.OS === 'android' ? Device.manufacturer : undefined,
-      brand: Platform.OS === 'android' ? Device.brand : undefined,
+      apiLevel: Platform.OS === "android" ? Device.platformApiLevel : undefined,
+      manufacturer: Platform.OS === "android" ? Device.manufacturer : undefined,
+      brand: Platform.OS === "android" ? Device.brand : undefined,
     };
 
     // Platform-specific validation
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       const version = parseInt(Platform.Version as string, 10);
       if (version < 16) {
         return {
           isSupported: false,
           isEnrolled: false,
           availableTypes: [],
-          authenticationType: 'None',
-          error: 'iOS 16 or higher required for passkey support',
+          authenticationType: "None",
+          error: "iOS 16 or higher required for passkey support",
           platformDetails,
         };
       }
-    } else if (Platform.OS === 'android') {
+    } else if (Platform.OS === "android") {
       if (!platformDetails.apiLevel || platformDetails.apiLevel < 23) {
         return {
           isSupported: false,
           isEnrolled: false,
           availableTypes: [],
-          authenticationType: 'None',
-          error: 'Android 6.0 (API 23) or higher required for biometric support',
+          authenticationType: "None",
+          error:
+            "Android 6.0 (API 23) or higher required for biometric support",
           platformDetails,
         };
       }
@@ -63,8 +65,8 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
         isSupported: false,
         isEnrolled: false,
         availableTypes: [],
-        authenticationType: 'None',
-        error: 'Unsupported platform',
+        authenticationType: "None",
+        error: "Unsupported platform",
         platformDetails: {
           platform: Platform.OS,
           version: Platform.Version,
@@ -88,8 +90,11 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
       isSupported: false,
       isEnrolled: false,
       availableTypes: [],
-      authenticationType: 'None',
-      error: error instanceof Error ? error.message : 'Unknown error checking biometric support',
+      authenticationType: "None",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error checking biometric support",
       platformDetails: {
         platform: Platform.OS,
         version: Platform.Version,
@@ -106,27 +111,31 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
 export function getBiometricType(types: number[]): string {
   const { LocalAuthentication, Platform } = getModules();
 
-  if (Platform.OS === 'ios') {
-    return types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
-      ? 'Face ID'
+  if (Platform.OS === "ios") {
+    return types.includes(
+      LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+    )
+      ? "Face ID"
       : types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)
-        ? 'Touch ID'
-        : 'None';
+        ? "Touch ID"
+        : "None";
   }
 
-  if (Platform.OS === 'android') {
+  if (Platform.OS === "android") {
     if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-      return 'Fingerprint';
+      return "Fingerprint";
     }
-    if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-      return 'Face Unlock';
+    if (
+      types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
+    ) {
+      return "Face Unlock";
     }
     if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
-      return 'Iris';
+      return "Iris";
     }
   }
 
-  return 'Biometric';
+  return "Biometric";
 }
 
 /**
@@ -135,7 +144,9 @@ export function getBiometricType(types: number[]): string {
  * @returns Promise resolving to authentication success
  * @throws {PasskeyError} If authentication fails
  */
-export async function authenticateWithBiometrics(options: AuthOptions): Promise<boolean> {
+export async function authenticateWithBiometrics(
+  options: AuthOptions,
+): Promise<boolean> {
   const { LocalAuthentication } = getModules();
 
   const result = await LocalAuthentication.authenticateAsync({
@@ -148,7 +159,7 @@ export async function authenticateWithBiometrics(options: AuthOptions): Promise<
   if (!result.success) {
     throw new PasskeyError(
       ERROR_CODES.BIOMETRIC.AUTHENTICATION_FAILED,
-      result.error || 'Authentication failed'
+      result.error || "Authentication failed",
     );
   }
 
@@ -169,11 +180,11 @@ export async function isPasskeySupported(): Promise<boolean> {
       return false;
     }
 
-    if (Platform.OS === 'ios') {
+    if (Platform.OS === "ios") {
       return isSupportedPlatform(Platform.OS, Platform.Version);
     }
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       const apiLevel = Device.platformApiLevel;
       if (!apiLevel) return false;
       return isSupportedPlatform(Platform.OS, apiLevel);
@@ -181,7 +192,7 @@ export async function isPasskeySupported(): Promise<boolean> {
 
     return false;
   } catch (error) {
-    console.error('Error checking passkey support:', error);
+    console.error("Error checking passkey support:", error);
     return false;
   }
 }

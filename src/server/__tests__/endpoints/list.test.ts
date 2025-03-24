@@ -1,6 +1,6 @@
-import { APIError } from 'better-call';
+import { APIError } from "better-call";
 
-import { createListEndpoint } from '../../../server/endpoints/list';
+import { createListEndpoint } from "../../../server/endpoints/list";
 
 // Mock logger
 const mockLogger = {
@@ -12,7 +12,7 @@ const mockLogger = {
 
 type EndpointHandler = (ctx: any) => Promise<any>;
 
-describe('listPasskeys endpoint', () => {
+describe("listPasskeys endpoint", () => {
   // Setup options for the endpoint
   const options = {
     logger: mockLogger,
@@ -21,25 +21,25 @@ describe('listPasskeys endpoint', () => {
   // Mock passkeys for database responses
   const mockPasskeys = [
     {
-      id: 'passkey-1',
-      userId: 'user-123',
-      deviceId: 'device-1',
-      platform: 'ios',
-      status: 'active',
-      lastUsed: '2023-02-01T00:00:00Z',
-      createdAt: '2023-01-01T00:00:00Z',
-      updatedAt: '2023-02-01T00:00:00Z',
+      id: "passkey-1",
+      userId: "user-123",
+      deviceId: "device-1",
+      platform: "ios",
+      status: "active",
+      lastUsed: "2023-02-01T00:00:00Z",
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-02-01T00:00:00Z",
       metadata: '{"deviceName":"iPhone 14"}',
     },
     {
-      id: 'passkey-2',
-      userId: 'user-123',
-      deviceId: 'device-2',
-      platform: 'android',
-      status: 'active',
-      lastUsed: '2023-01-15T00:00:00Z',
-      createdAt: '2023-01-10T00:00:00Z',
-      updatedAt: '2023-01-15T00:00:00Z',
+      id: "passkey-2",
+      userId: "user-123",
+      deviceId: "device-2",
+      platform: "android",
+      status: "active",
+      lastUsed: "2023-01-15T00:00:00Z",
+      createdAt: "2023-01-10T00:00:00Z",
+      updatedAt: "2023-01-15T00:00:00Z",
       metadata: '{"deviceName":"Pixel 7"}',
     },
   ];
@@ -47,11 +47,11 @@ describe('listPasskeys endpoint', () => {
   // Mock request context
   const mockCtx = {
     params: {
-      userId: 'user-123',
+      userId: "user-123",
     },
     query: {
-      limit: '10',
-      offset: '0',
+      limit: "10",
+      offset: "0",
     },
     context: {
       adapter: {
@@ -59,7 +59,7 @@ describe('listPasskeys endpoint', () => {
       },
       session: {
         user: {
-          id: 'user-123', // Match the userId in params for authorization
+          id: "user-123", // Match the userId in params for authorization
         },
       },
     },
@@ -70,7 +70,7 @@ describe('listPasskeys endpoint', () => {
     jest.clearAllMocks();
   });
 
-  it('should list passkeys for the user successfully', async () => {
+  it("should list passkeys for the user successfully", async () => {
     // Mock database response
     mockCtx.context.adapter.findMany.mockResolvedValueOnce(mockPasskeys);
 
@@ -83,12 +83,12 @@ describe('listPasskeys endpoint', () => {
 
     // Verify database query
     expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       where: [
-        { field: 'userId', operator: 'eq', value: 'user-123' },
-        { field: 'status', operator: 'eq', value: 'active' },
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
       ],
-      sortBy: { field: 'lastUsed', direction: 'desc' },
+      sortBy: { field: "lastUsed", direction: "desc" },
       limit: 11, // limit + 1 for pagination
       offset: 0,
     });
@@ -97,12 +97,12 @@ describe('listPasskeys endpoint', () => {
     expect(mockCtx.json).toHaveBeenCalledWith({
       passkeys: expect.arrayContaining([
         expect.objectContaining({
-          id: 'passkey-1',
-          metadata: { deviceName: 'iPhone 14' },
+          id: "passkey-1",
+          metadata: { deviceName: "iPhone 14" },
         }),
         expect.objectContaining({
-          id: 'passkey-2',
-          metadata: { deviceName: 'Pixel 7' },
+          id: "passkey-2",
+          metadata: { deviceName: "Pixel 7" },
         }),
       ]),
       nextOffset: undefined, // No pagination for just 2 results with limit 10
@@ -110,24 +110,27 @@ describe('listPasskeys endpoint', () => {
 
     // Verify debug logging
     expect(mockLogger.debug).toHaveBeenCalledWith(
-      'Server received passkey list request:',
-      expect.any(Object)
+      "Server received passkey list request:",
+      expect.any(Object),
     );
-    expect(mockLogger.debug).toHaveBeenCalledWith('Returning passkeys:', expect.any(Object));
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      "Returning passkeys:",
+      expect.any(Object),
+    );
   });
 
-  it('should handle pagination correctly', async () => {
+  it("should handle pagination correctly", async () => {
     // Create more mock passkeys than the limit
     const extraPasskeys = Array(11)
       .fill(0)
       .map((_, i) => ({
         id: `passkey-${i + 1}`,
-        userId: 'user-123',
+        userId: "user-123",
         deviceId: `device-${i + 1}`,
-        platform: i % 2 === 0 ? 'ios' : 'android',
-        status: 'active',
+        platform: i % 2 === 0 ? "ios" : "android",
+        status: "active",
         lastUsed: `2023-02-0${Math.min(i + 1, 9)}T00:00:00Z`,
-        createdAt: '2023-01-01T00:00:00Z',
+        createdAt: "2023-01-01T00:00:00Z",
         updatedAt: `2023-02-0${Math.min(i + 1, 9)}T00:00:00Z`,
         metadata: `{"deviceName":"Device ${i + 1}"}`,
       }));
@@ -143,12 +146,12 @@ describe('listPasskeys endpoint', () => {
 
     // Verify database query
     expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       where: [
-        { field: 'userId', operator: 'eq', value: 'user-123' },
-        { field: 'status', operator: 'eq', value: 'active' },
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
       ],
-      sortBy: { field: 'lastUsed', direction: 'desc' },
+      sortBy: { field: "lastUsed", direction: "desc" },
       limit: 11, // limit + 1 for pagination check
       offset: 0,
     });
@@ -161,7 +164,7 @@ describe('listPasskeys endpoint', () => {
     expect(responseArg.passkeys.length).toBe(10);
   });
 
-  it('should reject if the requesting user does not match the userId', async () => {
+  it("should reject if the requesting user does not match the userId", async () => {
     // Change the session user to be different from the requested userId
     const modifiedCtx = {
       ...mockCtx,
@@ -169,7 +172,7 @@ describe('listPasskeys endpoint', () => {
         ...mockCtx.context,
         session: {
           user: {
-            id: 'different-user', // Different from 'user-123' in params
+            id: "different-user", // Different from 'user-123' in params
           },
         },
       },
@@ -187,15 +190,15 @@ describe('listPasskeys endpoint', () => {
 
     // Verify warning was logged
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Unauthorized attempt to list passkeys',
+      "Unauthorized attempt to list passkeys",
       expect.objectContaining({
-        requestedUserId: 'user-123',
-        sessionUserId: 'different-user',
-      })
+        requestedUserId: "user-123",
+        sessionUserId: "different-user",
+      }),
     );
   });
 
-  it('should return an empty array when no passkeys exist', async () => {
+  it("should return an empty array when no passkeys exist", async () => {
     // Mock empty database response
     mockCtx.context.adapter.findMany.mockResolvedValueOnce([]);
 
@@ -212,9 +215,11 @@ describe('listPasskeys endpoint', () => {
     });
   });
 
-  it('should handle database errors gracefully', async () => {
+  it("should handle database errors gracefully", async () => {
     // Mock database error
-    mockCtx.context.adapter.findMany.mockRejectedValueOnce(new Error('Database query failed'));
+    mockCtx.context.adapter.findMany.mockRejectedValueOnce(
+      new Error("Database query failed"),
+    );
 
     // Create endpoint and get handler using type assertion
     const endpoint = createListEndpoint(options);
@@ -225,8 +230,8 @@ describe('listPasskeys endpoint', () => {
 
     // Verify error was logged
     expect(mockLogger.error).toHaveBeenCalledWith(
-      'Server error in listPasskeys:',
-      expect.any(Error)
+      "Server error in listPasskeys:",
+      expect.any(Error),
     );
   });
 });

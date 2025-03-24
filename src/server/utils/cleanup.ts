@@ -3,9 +3,9 @@
  * @description Handles cleanup of inactive passkeys
  */
 
-import type { AuthContext } from 'better-auth/types';
+import type { AuthContext } from "better-auth/types";
 
-import type { Logger } from './logger';
+import type { Logger } from "./logger";
 
 export interface CleanupOptions {
   /**
@@ -24,7 +24,11 @@ export interface CleanupOptions {
 /**
  * Initializes the cleanup job for inactive passkeys
  */
-export const setupCleanupJob = (ctx: AuthContext, options: CleanupOptions = {}, logger: Logger) => {
+export const setupCleanupJob = (
+  ctx: AuthContext,
+  options: CleanupOptions = {},
+  logger: Logger,
+) => {
   const inactiveDays = options.inactiveDays ?? 30;
   const disableInterval = options.disableInterval ?? false;
 
@@ -39,28 +43,28 @@ export const setupCleanupJob = (ctx: AuthContext, options: CleanupOptions = {}, 
 
     try {
       const result = await ctx.adapter.updateMany({
-        model: 'mobilePasskey',
+        model: "mobilePasskey",
         where: [
           {
-            field: 'lastUsed',
-            operator: 'lt',
+            field: "lastUsed",
+            operator: "lt",
             value: inactiveCutoff.toISOString(),
           },
-          { field: 'status', operator: 'eq', value: 'active' },
+          { field: "status", operator: "eq", value: "active" },
         ],
         update: {
-          status: 'revoked',
+          status: "revoked",
           revokedAt: new Date().toISOString(),
-          revokedReason: 'automatic_inactive',
+          revokedReason: "automatic_inactive",
           updatedAt: new Date().toISOString(),
         },
       });
 
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.NODE_ENV !== "production") {
         logger.info(`Cleaned up ${result} inactive passkeys`);
       }
     } catch (error) {
-      logger.error('Cleanup job failed:', error);
+      logger.error("Cleanup job failed:", error);
     }
   };
 

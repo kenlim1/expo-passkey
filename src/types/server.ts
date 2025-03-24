@@ -3,7 +3,7 @@
  * @module expo-passkey/types/server
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Configuration options for the Expo Passkey server plugin
@@ -38,7 +38,7 @@ export interface ExpoPasskeyOptions {
   /** Logger configuration */
   logger?: {
     enabled?: boolean;
-    level?: 'debug' | 'info' | 'warn' | 'error';
+    level?: "debug" | "info" | "warn" | "error";
   };
 }
 
@@ -51,7 +51,7 @@ export const mobilePasskeySchema = z.object({
   deviceId: z.string(),
   platform: z.string(),
   lastUsed: z.string(),
-  status: z.enum(['active', 'revoked']).default('active'),
+  status: z.enum(["active", "revoked"]).default("active"),
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),
   revokedAt: z.string().optional(),

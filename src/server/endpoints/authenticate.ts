@@ -3,16 +3,16 @@
  * @description Implementation of the passkey authentication endpoint
  */
 
-import { createAuthEndpoint } from 'better-auth/api';
-import { setCookieCache, setSessionCookie } from 'better-auth/cookies';
-import type { User } from 'better-auth/types';
-import { APIError } from 'better-call';
+import { createAuthEndpoint } from "better-auth/api";
+import { setCookieCache, setSessionCookie } from "better-auth/cookies";
+import type { User } from "better-auth/types";
+import { APIError } from "better-call";
 
-import { ERROR_CODES, ERROR_MESSAGES } from '../../types/errors';
-import type { Logger } from '../utils/logger';
-import { authenticatePasskeySchema } from '../utils/schema';
+import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
+import type { Logger } from "../utils/logger";
+import { authenticatePasskeySchema } from "../utils/schema";
 
-import type { MobilePasskey } from '~/types';
+import type { MobilePasskey } from "~/types";
 
 /**
  * Create passkey authentication endpoint
@@ -21,32 +21,32 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
   const { logger } = options;
 
   return createAuthEndpoint(
-    '/expo-passkey/authenticate',
+    "/expo-passkey/authenticate",
     {
-      method: 'POST',
+      method: "POST",
       body: authenticatePasskeySchema,
       metadata: {
         openapi: {
-          description: 'Authenticate using a registered passkey',
-          tags: ['Authentication'],
+          description: "Authenticate using a registered passkey",
+          tags: ["Authentication"],
           responses: {
             200: {
-              description: 'Authentication successful',
+              description: "Authentication successful",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       data: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                          token: { type: 'string' },
+                          token: { type: "string" },
                           user: {
-                            type: 'object',
+                            type: "object",
                             properties: {
-                              id: { type: 'string' },
-                              email: { type: 'string' },
-                              emailVerified: { type: 'boolean' },
+                              id: { type: "string" },
+                              email: { type: "string" },
+                              emailVerified: { type: "boolean" },
                             },
                           },
                         },
@@ -57,17 +57,17 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
               },
             },
             401: {
-              description: 'Authentication failed',
+              description: "Authentication failed",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       error: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                          code: { type: 'string' },
-                          message: { type: 'string' },
+                          code: { type: "string" },
+                          message: { type: "string" },
                         },
                       },
                     },
@@ -83,22 +83,22 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
       const { deviceId, metadata } = ctx.body;
 
       try {
-        logger.debug('Authentication attempt:', { deviceId });
+        logger.debug("Authentication attempt:", { deviceId });
 
         // Find the active credential for the provided device ID
         const credential = await ctx.context.adapter.findOne<MobilePasskey>({
-          model: 'mobilePasskey',
+          model: "mobilePasskey",
           where: [
-            { field: 'deviceId', operator: 'eq', value: deviceId },
-            { field: 'status', operator: 'eq', value: 'active' },
+            { field: "deviceId", operator: "eq", value: deviceId },
+            { field: "status", operator: "eq", value: "active" },
           ],
         });
 
         if (!credential) {
-          logger.warn('Authentication failed: Invalid credential', {
+          logger.warn("Authentication failed: Invalid credential", {
             deviceId,
           });
-          throw new APIError('UNAUTHORIZED', {
+          throw new APIError("UNAUTHORIZED", {
             code: ERROR_CODES.SERVER.INVALID_CREDENTIAL,
             message: ERROR_MESSAGES[ERROR_CODES.SERVER.INVALID_CREDENTIAL],
           });
@@ -106,16 +106,16 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
 
         // Find the user associated with the credential
         const user = await ctx.context.adapter.findOne<User>({
-          model: 'user',
-          where: [{ field: 'id', operator: 'eq', value: credential.userId }],
+          model: "user",
+          where: [{ field: "id", operator: "eq", value: credential.userId }],
         });
 
         if (!user) {
-          logger.error('Authentication failed: User not found', {
+          logger.error("Authentication failed: User not found", {
             deviceId,
             userId: credential.userId,
           });
-          throw new APIError('UNAUTHORIZED', {
+          throw new APIError("UNAUTHORIZED", {
             code: ERROR_CODES.SERVER.USER_NOT_FOUND,
             message: ERROR_MESSAGES[ERROR_CODES.SERVER.USER_NOT_FOUND],
           });
@@ -125,13 +125,13 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
 
         // Update passkey metadata
         await ctx.context.adapter.update({
-          model: 'mobilePasskey',
-          where: [{ field: 'id', operator: 'eq', value: credential.id }],
+          model: "mobilePasskey",
+          where: [{ field: "id", operator: "eq", value: credential.id }],
           update: {
             lastUsed: now,
             updatedAt: now,
             metadata: JSON.stringify({
-              ...JSON.parse(credential.metadata || '{}'),
+              ...JSON.parse(credential.metadata || "{}"),
               ...metadata,
               lastAuthenticationAt: now,
             }),
@@ -139,18 +139,23 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
         });
 
         // Create session using internal adapter
-        const sessionToken = await ctx.context.internalAdapter.createSession(user.id, ctx.request);
+        const sessionToken = await ctx.context.internalAdapter.createSession(
+          user.id,
+          ctx.request,
+        );
 
-        const sessionData = await ctx.context.internalAdapter.findSession(sessionToken.token);
+        const sessionData = await ctx.context.internalAdapter.findSession(
+          sessionToken.token,
+        );
 
         if (!sessionData) {
-          logger.error('Failed to find created session:', {
+          logger.error("Failed to find created session:", {
             token: sessionToken.token,
             userId: user.id,
           });
-          throw new APIError('INTERNAL_SERVER_ERROR', {
-            code: 'SESSION_NOT_FOUND',
-            message: 'Failed to create session',
+          throw new APIError("INTERNAL_SERVER_ERROR", {
+            code: "SESSION_NOT_FOUND",
+            message: "Failed to create session",
           });
         }
 
@@ -162,7 +167,7 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
           await setCookieCache(ctx, sessionData);
         }
 
-        logger.info('Authentication successful', {
+        logger.info("Authentication successful", {
           userId: user.id,
           deviceId,
         });
@@ -173,13 +178,13 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
           user: sessionData.user,
         });
       } catch (error) {
-        logger.error('Authentication error:', error);
+        logger.error("Authentication error:", error);
         if (error instanceof APIError) throw error;
-        throw new APIError('UNAUTHORIZED', {
+        throw new APIError("UNAUTHORIZED", {
           code: ERROR_CODES.SERVER.AUTHENTICATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.AUTHENTICATION_FAILED],
         });
       }
-    }
+    },
   );
 };

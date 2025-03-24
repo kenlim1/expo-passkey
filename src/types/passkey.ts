@@ -3,14 +3,14 @@
  * @module expo-passkey/types/passkey
  */
 
-import type { AuthenticationType } from 'expo-local-authentication';
+import type { AuthenticationType } from "expo-local-authentication";
 
-import type { MobilePasskey } from './server';
+import type { MobilePasskey } from "./server";
 
 /**
  * Platform type for passkey registration
  */
-export type PasskeyPlatform = 'ios' | 'android' | 'windows' | 'macos' | 'web';
+export type PasskeyPlatform = "ios" | "android" | "windows" | "macos" | "web";
 
 /**
  * Base metadata interface for passkeys

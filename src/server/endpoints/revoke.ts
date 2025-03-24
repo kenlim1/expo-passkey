@@ -3,14 +3,14 @@
  * @description Implementation of the endpoint to revoke a passkey
  */
 
-import { createAuthEndpoint } from 'better-auth/api';
-import { APIError } from 'better-call';
+import { createAuthEndpoint } from "better-auth/api";
+import { APIError } from "better-call";
 
-import { ERROR_CODES, ERROR_MESSAGES } from '../../types/errors';
-import type { Logger } from '../utils/logger';
-import { revokePasskeySchema } from '../utils/schema';
+import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
+import type { Logger } from "../utils/logger";
+import { revokePasskeySchema } from "../utils/schema";
 
-import type { MobilePasskey } from '~/types';
+import type { MobilePasskey } from "~/types";
 
 /**
  * Create endpoint to revoke a passkey
@@ -19,40 +19,40 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
   const { logger } = options;
 
   return createAuthEndpoint(
-    '/expo-passkey/revoke',
+    "/expo-passkey/revoke",
     {
-      method: 'POST',
+      method: "POST",
       body: revokePasskeySchema,
       metadata: {
         openapi: {
-          description: 'Revoke a registered passkey',
-          tags: ['Authentication'],
+          description: "Revoke a registered passkey",
+          tags: ["Authentication"],
           responses: {
             200: {
-              description: 'Passkey successfully revoked',
+              description: "Passkey successfully revoked",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
-                      success: { type: 'boolean' },
+                      success: { type: "boolean" },
                     },
                   },
                 },
               },
             },
             404: {
-              description: 'Passkey not found',
+              description: "Passkey not found",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       error: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                          code: { type: 'string' },
-                          message: { type: 'string' },
+                          code: { type: "string" },
+                          message: { type: "string" },
                         },
                       },
                     },
@@ -68,21 +68,21 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
       const { userId, deviceId, reason } = ctx.body;
 
       try {
-        logger.debug('Revoking passkey', { userId, deviceId });
+        logger.debug("Revoking passkey", { userId, deviceId });
 
         // Find the active credential for the provided device ID and user ID
         const credential = await ctx.context.adapter.findOne<MobilePasskey>({
-          model: 'mobilePasskey',
+          model: "mobilePasskey",
           where: [
-            { field: 'deviceId', operator: 'eq', value: deviceId },
-            { field: 'userId', operator: 'eq', value: userId },
-            { field: 'status', operator: 'eq', value: 'active' },
+            { field: "deviceId", operator: "eq", value: deviceId },
+            { field: "userId", operator: "eq", value: userId },
+            { field: "status", operator: "eq", value: "active" },
           ],
         });
 
         if (!credential) {
-          logger.warn('Revoke failed: Passkey not found', { deviceId });
-          throw new APIError('NOT_FOUND', {
+          logger.warn("Revoke failed: Passkey not found", { deviceId });
+          throw new APIError("NOT_FOUND", {
             code: ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND,
             message: ERROR_MESSAGES[ERROR_CODES.SERVER.CREDENTIAL_NOT_FOUND],
           });
@@ -92,31 +92,31 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
 
         // Update the credential to revoked status
         await ctx.context.adapter.update({
-          model: 'mobilePasskey',
-          where: [{ field: 'id', operator: 'eq', value: credential.id }],
+          model: "mobilePasskey",
+          where: [{ field: "id", operator: "eq", value: credential.id }],
           update: {
-            status: 'revoked',
+            status: "revoked",
             revokedAt: now,
-            revokedReason: reason || 'user_initiated',
+            revokedReason: reason || "user_initiated",
             updatedAt: now,
           },
         });
 
-        logger.info('Passkey revoked successfully', {
+        logger.info("Passkey revoked successfully", {
           userId,
           deviceId,
-          reason: reason || 'user_initiated',
+          reason: reason || "user_initiated",
         });
 
         return ctx.json({ success: true });
       } catch (error) {
-        logger.error('Failed to revoke passkey', error);
+        logger.error("Failed to revoke passkey", error);
         if (error instanceof APIError) throw error;
-        throw new APIError('BAD_REQUEST', {
+        throw new APIError("BAD_REQUEST", {
           code: ERROR_CODES.SERVER.REVOCATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.REVOCATION_FAILED],
         });
       }
-    }
+    },
   );
 };

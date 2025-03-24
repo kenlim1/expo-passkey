@@ -1,34 +1,34 @@
-import * as endpointExports from '../../endpoints';
-import { createAuthenticateEndpoint as authenticate } from '../../endpoints/authenticate';
-import { createListEndpoint as list } from '../../endpoints/list';
-import { createRegisterEndpoint as register } from '../../endpoints/register';
-import { createRevokeEndpoint as revoke } from '../../endpoints/revoke';
+import * as endpointExports from "../../endpoints";
+import { createAuthenticateEndpoint as authenticate } from "../../endpoints/authenticate";
+import { createListEndpoint as list } from "../../endpoints/list";
+import { createRegisterEndpoint as register } from "../../endpoints/register";
+import { createRevokeEndpoint as revoke } from "../../endpoints/revoke";
 
-describe('server/endpoints module exports', () => {
-  it('should export createRegisterEndpoint from register', () => {
+describe("server/endpoints module exports", () => {
+  it("should export createRegisterEndpoint from register", () => {
     expect(endpointExports.createRegisterEndpoint).toBe(register);
   });
 
-  it('should export createAuthenticateEndpoint from authenticate', () => {
+  it("should export createAuthenticateEndpoint from authenticate", () => {
     expect(endpointExports.createAuthenticateEndpoint).toBe(authenticate);
   });
 
-  it('should export createListEndpoint from list', () => {
+  it("should export createListEndpoint from list", () => {
     expect(endpointExports.createListEndpoint).toBe(list);
   });
 
-  it('should export createRevokeEndpoint from revoke', () => {
+  it("should export createRevokeEndpoint from revoke", () => {
     expect(endpointExports.createRevokeEndpoint).toBe(revoke);
   });
 
-  it('should export exactly the four endpoint creators', () => {
+  it("should export exactly the four endpoint creators", () => {
     expect(Object.keys(endpointExports).sort()).toEqual(
       [
-        'createRegisterEndpoint',
-        'createAuthenticateEndpoint',
-        'createListEndpoint',
-        'createRevokeEndpoint',
-      ].sort()
+        "createRegisterEndpoint",
+        "createAuthenticateEndpoint",
+        "createListEndpoint",
+        "createRevokeEndpoint",
+      ].sort(),
     );
   });
 });

@@ -3,19 +3,19 @@
  * @description Tests specifically for the Mobile Passkey DB model
  */
 
-import { mobilePasskeySchema } from '../../../types';
+import { mobilePasskeySchema } from "../../../types";
 
-describe('MobilePasskey Schema Tests', () => {
-  describe('mobilePasskeySchema validation', () => {
+describe("MobilePasskey Schema Tests", () => {
+  describe("mobilePasskeySchema validation", () => {
     // Test the default function for createdAt
-    it('should apply default Date function for createdAt when missing', () => {
+    it("should apply default Date function for createdAt when missing", () => {
       const passkey = {
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        lastUsed: '2023-01-01T00:00:00Z',
-        status: 'active' as const,
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        lastUsed: "2023-01-01T00:00:00Z",
+        status: "active" as const,
         // No createdAt
         updatedAt: new Date(),
       };
@@ -35,14 +35,14 @@ describe('MobilePasskey Schema Tests', () => {
     });
 
     // Test the default function for updatedAt
-    it('should apply default Date function for updatedAt when missing', () => {
+    it("should apply default Date function for updatedAt when missing", () => {
       const passkey = {
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        lastUsed: '2023-01-01T00:00:00Z',
-        status: 'active' as const,
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        lastUsed: "2023-01-01T00:00:00Z",
+        status: "active" as const,
         createdAt: new Date(),
         // No updatedAt
       };
@@ -62,13 +62,13 @@ describe('MobilePasskey Schema Tests', () => {
     });
 
     // Test status default function
-    it('should apply default active value for status when missing', () => {
+    it("should apply default active value for status when missing", () => {
       const passkey = {
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        lastUsed: '2023-01-01T00:00:00Z',
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        lastUsed: "2023-01-01T00:00:00Z",
         // No status
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -79,18 +79,18 @@ describe('MobilePasskey Schema Tests', () => {
 
       if (result.success) {
         // Verify default status is 'active'
-        expect(result.data.status).toBe('active');
+        expect(result.data.status).toBe("active");
       }
     });
 
     // Test multiple defaults at once
-    it('should apply all defaults simultaneously when fields are missing', () => {
+    it("should apply all defaults simultaneously when fields are missing", () => {
       const minimalPasskey = {
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        lastUsed: '2023-01-01T00:00:00Z',
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        lastUsed: "2023-01-01T00:00:00Z",
         // Missing status, createdAt, updatedAt
       };
 
@@ -99,7 +99,7 @@ describe('MobilePasskey Schema Tests', () => {
 
       if (result.success) {
         // Verify all defaults were applied
-        expect(result.data.status).toBe('active');
+        expect(result.data.status).toBe("active");
         expect(result.data.createdAt).toBeInstanceOf(Date);
         expect(result.data.updatedAt).toBeInstanceOf(Date);
       }

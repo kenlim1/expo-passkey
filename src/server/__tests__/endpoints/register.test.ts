@@ -1,6 +1,6 @@
-import { APIError } from 'better-call';
+import { APIError } from "better-call";
 
-import { createRegisterEndpoint } from '../../../server/endpoints/register';
+import { createRegisterEndpoint } from "../../../server/endpoints/register";
 
 // Mock the logger
 const mockLogger = {
@@ -12,22 +12,22 @@ const mockLogger = {
 
 type EndpointHandler = (ctx: any) => Promise<any>;
 
-describe('registerPasskey endpoint', () => {
+describe("registerPasskey endpoint", () => {
   // Setup options for the endpoint
   const options = {
-    rpName: 'Test App',
-    rpId: 'example.com',
+    rpName: "Test App",
+    rpId: "example.com",
     logger: mockLogger,
   };
 
   // Mock request context
   const mockCtx = {
     body: {
-      userId: 'user-123',
-      deviceId: 'device-123',
-      platform: 'ios',
+      userId: "user-123",
+      deviceId: "device-123",
+      platform: "ios",
       metadata: {
-        deviceName: 'iPhone Test',
+        deviceName: "iPhone Test",
       },
     },
     context: {
@@ -36,7 +36,7 @@ describe('registerPasskey endpoint', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
-      generateId: jest.fn(() => 'generated-id'),
+      generateId: jest.fn(() => "generated-id"),
     },
     json: jest.fn(),
   };
@@ -45,10 +45,10 @@ describe('registerPasskey endpoint', () => {
     jest.clearAllMocks();
   });
 
-  it('should register a new passkey successfully', async () => {
+  it("should register a new passkey successfully", async () => {
     // Mock user exists
     mockCtx.context.adapter.findOne
-      .mockResolvedValueOnce({ id: 'user-123' }) // User exists
+      .mockResolvedValueOnce({ id: "user-123" }) // User exists
       .mockResolvedValueOnce(null); // No existing credential
 
     // Create endpoint and get handler using type assertion
@@ -61,25 +61,25 @@ describe('registerPasskey endpoint', () => {
 
     // Verify user check was performed
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: 'user',
-      where: [{ field: 'id', operator: 'eq', value: 'user-123' }],
+      model: "user",
+      where: [{ field: "id", operator: "eq", value: "user-123" }],
     });
 
     // Verify credential check was performed
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
-      where: [{ field: 'deviceId', operator: 'eq', value: 'device-123' }],
+      model: "mobilePasskey",
+      where: [{ field: "deviceId", operator: "eq", value: "device-123" }],
     });
 
     // Verify new passkey creation
     expect(mockCtx.context.adapter.create).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       data: expect.objectContaining({
-        id: 'generated-id',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        status: 'active',
+        id: "generated-id",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        status: "active",
         metadata: expect.any(String),
       }),
     });
@@ -87,28 +87,28 @@ describe('registerPasskey endpoint', () => {
     // Verify response
     expect(mockCtx.json).toHaveBeenCalledWith({
       success: true,
-      rpName: 'Test App',
-      rpId: 'example.com',
+      rpName: "Test App",
+      rpId: "example.com",
     });
 
     // Verify logging
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Passkey registration successful',
-      expect.any(Object)
+      "Passkey registration successful",
+      expect.any(Object),
     );
   });
 
-  it('should reactivate a revoked passkey', async () => {
+  it("should reactivate a revoked passkey", async () => {
     // Mock user and existing revoked credential
     mockCtx.context.adapter.findOne
-      .mockResolvedValueOnce({ id: 'user-123' }) // User exists
+      .mockResolvedValueOnce({ id: "user-123" }) // User exists
       .mockResolvedValueOnce({
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        status: 'revoked',
-        metadata: '{}',
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        status: "revoked",
+        metadata: "{}",
       }); // Existing revoked credential
 
     // Create endpoint and get handler using type assertion
@@ -120,10 +120,10 @@ describe('registerPasskey endpoint', () => {
 
     // Verify update was called instead of create
     expect(mockCtx.context.adapter.update).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
-      where: [{ field: 'id', operator: 'eq', value: 'passkey-123' }],
+      model: "mobilePasskey",
+      where: [{ field: "id", operator: "eq", value: "passkey-123" }],
       update: expect.objectContaining({
-        status: 'active',
+        status: "active",
         revokedAt: null,
         revokedReason: null,
       }),
@@ -134,31 +134,31 @@ describe('registerPasskey endpoint', () => {
     // Verify response
     expect(mockCtx.json).toHaveBeenCalledWith({
       success: true,
-      rpName: 'Test App',
-      rpId: 'example.com',
+      rpName: "Test App",
+      rpId: "example.com",
     });
 
     // Verify logging
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Reactivating previously revoked passkey',
+      "Reactivating previously revoked passkey",
       expect.objectContaining({
-        deviceId: 'device-123',
-        previousStatus: 'revoked',
-      })
+        deviceId: "device-123",
+        previousStatus: "revoked",
+      }),
     );
   });
 
-  it('should reject if the passkey is already active', async () => {
+  it("should reject if the passkey is already active", async () => {
     // Mock user and existing active credential
     mockCtx.context.adapter.findOne
-      .mockResolvedValueOnce({ id: 'user-123' }) // User exists
+      .mockResolvedValueOnce({ id: "user-123" }) // User exists
       .mockResolvedValueOnce({
-        id: 'passkey-123',
-        userId: 'user-123',
-        deviceId: 'device-123',
-        platform: 'ios',
-        status: 'active', // Already active
-        metadata: '{}',
+        id: "passkey-123",
+        userId: "user-123",
+        deviceId: "device-123",
+        platform: "ios",
+        status: "active", // Already active
+        metadata: "{}",
       });
 
     // Create endpoint and get handler using type assertion
@@ -174,12 +174,12 @@ describe('registerPasskey endpoint', () => {
 
     // Verify logging of warning
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Registration failed: Device already registered',
-      expect.any(Object)
+      "Registration failed: Device already registered",
+      expect.any(Object),
     );
   });
 
-  it('should reject if the user does not exist', async () => {
+  it("should reject if the user does not exist", async () => {
     // Mock user not found
     mockCtx.context.adapter.findOne.mockResolvedValueOnce(null);
 
@@ -192,8 +192,8 @@ describe('registerPasskey endpoint', () => {
 
     // Verify user check was performed
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: 'user',
-      where: [{ field: 'id', operator: 'eq', value: 'user-123' }],
+      model: "user",
+      where: [{ field: "id", operator: "eq", value: "user-123" }],
     });
 
     // Verify neither create nor update was called
@@ -202,19 +202,21 @@ describe('registerPasskey endpoint', () => {
 
     // Verify logging of warning
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Registration failed: User not found',
-      expect.any(Object)
+      "Registration failed: User not found",
+      expect.any(Object),
     );
   });
 
-  it('should handle database errors gracefully', async () => {
+  it("should handle database errors gracefully", async () => {
     // Mock user exists but database error occurs
     mockCtx.context.adapter.findOne
-      .mockResolvedValueOnce({ id: 'user-123' }) // User exists
+      .mockResolvedValueOnce({ id: "user-123" }) // User exists
       .mockResolvedValueOnce(null); // No existing credential
 
     // Mock create to throw error
-    mockCtx.context.adapter.create.mockRejectedValueOnce(new Error('Database error'));
+    mockCtx.context.adapter.create.mockRejectedValueOnce(
+      new Error("Database error"),
+    );
 
     // Create endpoint and get handler using type assertion
     const endpoint = createRegisterEndpoint(options);
@@ -224,6 +226,9 @@ describe('registerPasskey endpoint', () => {
     await expect(handler(mockCtx)).rejects.toThrow(APIError);
 
     // Verify error was logged
-    expect(mockLogger.error).toHaveBeenCalledWith('Registration error:', expect.any(Error));
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Registration error:",
+      expect.any(Error),
+    );
   });
 });

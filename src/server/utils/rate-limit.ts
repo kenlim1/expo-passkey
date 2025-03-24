@@ -3,12 +3,12 @@
  * @description Rate limiting definitions for passkey operations
  */
 
-import type { BetterAuthPlugin } from 'better-auth/types';
+import type { BetterAuthPlugin } from "better-auth/types";
 
 /**
  * Rate limit configuration type from Better Auth plugin
  */
-type RateLimitConfig = NonNullable<BetterAuthPlugin['rateLimit']>[number];
+type RateLimitConfig = NonNullable<BetterAuthPlugin["rateLimit"]>[number];
 
 export interface RateLimitOptions {
   /**
@@ -35,7 +35,9 @@ export interface RateLimitOptions {
 /**
  * Creates rate limiting configuration for the passkey plugin
  */
-export const createRateLimits = (options: RateLimitOptions = {}): RateLimitConfig[] => {
+export const createRateLimits = (
+  options: RateLimitOptions = {},
+): RateLimitConfig[] => {
   const opts = {
     registerWindow: options.registerWindow || 300,
     registerMax: options.registerMax || 3,
@@ -46,21 +48,21 @@ export const createRateLimits = (options: RateLimitOptions = {}): RateLimitConfi
   return [
     // Rate limit for registration endpoint
     {
-      pathMatcher: (path: string) => path === '/expo-passkey/register',
+      pathMatcher: (path: string) => path === "/expo-passkey/register",
       window: opts.registerWindow,
       max: opts.registerMax,
     },
 
     // Rate limit for authentication endpoint
     {
-      pathMatcher: (path: string) => path === '/expo-passkey/authenticate',
+      pathMatcher: (path: string) => path === "/expo-passkey/authenticate",
       window: opts.authenticateWindow,
       max: opts.authenticateMax,
     },
 
     // Global rate limit for all passkey endpoints
     {
-      pathMatcher: (path: string) => path.startsWith('/expo-passkey/'),
+      pathMatcher: (path: string) => path.startsWith("/expo-passkey/"),
       window: 60,
       max: 30,
     },

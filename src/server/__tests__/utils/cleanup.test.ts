@@ -2,9 +2,9 @@
  * @file Unit tests for the cleanup utility
  */
 
-import { setupCleanupJob, type CleanupOptions } from '../../utils/cleanup';
+import { setupCleanupJob, type CleanupOptions } from "../../utils/cleanup";
 
-import type { Logger } from '../../utils/logger';
+import type { Logger } from "../../utils/logger";
 
 // Set up for each individual test
 const setupTest = (options?: CleanupOptions) => {
@@ -21,10 +21,14 @@ const setupTest = (options?: CleanupOptions) => {
   };
 
   // Spy on setInterval
-  const setIntervalSpy = jest.spyOn(global, 'setInterval');
+  const setIntervalSpy = jest.spyOn(global, "setInterval");
 
   // Call the function with the specified options
-  const result = setupCleanupJob(mockContext as any, options || {}, mockLogger as Logger);
+  const result = setupCleanupJob(
+    mockContext as any,
+    options || {},
+    mockLogger as Logger,
+  );
 
   return {
     mockContext,
@@ -36,11 +40,11 @@ const setupTest = (options?: CleanupOptions) => {
   };
 };
 
-describe('Cleanup utility', () => {
+describe("Cleanup utility", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    jest.setSystemTime(new Date('2023-01-01T00:00:00Z'));
+    jest.setSystemTime(new Date("2023-01-01T00:00:00Z"));
   });
 
   afterEach(() => {
@@ -48,44 +52,47 @@ describe('Cleanup utility', () => {
     jest.restoreAllMocks();
   });
 
-  test('should setup the cleanup job with default options', () => {
+  test("should setup the cleanup job with default options", () => {
     const { mockUpdateMany, setIntervalSpy, result } = setupTest();
 
     // Calculate expected cutoff date (30 days ago by default)
-    const expectedCutoff = new Date('2023-01-01T00:00:00Z');
+    const expectedCutoff = new Date("2023-01-01T00:00:00Z");
     expectedCutoff.setDate(expectedCutoff.getDate() - 30);
 
     // Verify immediate cleanup was triggered with correct params
     expect(mockUpdateMany).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       where: [
         {
-          field: 'lastUsed',
-          operator: 'lt',
+          field: "lastUsed",
+          operator: "lt",
           value: expectedCutoff.toISOString(),
         },
-        { field: 'status', operator: 'eq', value: 'active' },
+        { field: "status", operator: "eq", value: "active" },
       ],
       update: {
-        status: 'revoked',
-        revokedAt: new Date('2023-01-01T00:00:00Z').toISOString(),
-        revokedReason: 'automatic_inactive',
-        updatedAt: new Date('2023-01-01T00:00:00Z').toISOString(),
+        status: "revoked",
+        revokedAt: new Date("2023-01-01T00:00:00Z").toISOString(),
+        revokedReason: "automatic_inactive",
+        updatedAt: new Date("2023-01-01T00:00:00Z").toISOString(),
       },
     });
 
     // Verify interval was set up
-    expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 24 * 60 * 60 * 1000);
+    expect(setIntervalSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      24 * 60 * 60 * 1000,
+    );
 
     // Verify function returned the interval handle
     expect(result).toBeDefined();
   });
 
-  test('should respect the inactiveDays option', () => {
+  test("should respect the inactiveDays option", () => {
     const { mockUpdateMany } = setupTest({ inactiveDays: 60 });
 
     // Calculate expected cutoff date (60 days ago)
-    const expectedCutoff = new Date('2023-01-01T00:00:00Z');
+    const expectedCutoff = new Date("2023-01-01T00:00:00Z");
     expectedCutoff.setDate(expectedCutoff.getDate() - 60);
 
     // Verify cutoff date is correct
@@ -93,17 +100,19 @@ describe('Cleanup utility', () => {
       expect.objectContaining({
         where: expect.arrayContaining([
           {
-            field: 'lastUsed',
-            operator: 'lt',
+            field: "lastUsed",
+            operator: "lt",
             value: expectedCutoff.toISOString(),
           },
         ]),
-      })
+      }),
     );
   });
 
-  test('should return early if inactiveDays is 0', () => {
-    const { mockUpdateMany, setIntervalSpy, result } = setupTest({ inactiveDays: 0 });
+  test("should return early if inactiveDays is 0", () => {
+    const { mockUpdateMany, setIntervalSpy, result } = setupTest({
+      inactiveDays: 0,
+    });
 
     // Verify nothing happened - early return
     expect(mockUpdateMany).not.toHaveBeenCalled();
@@ -111,8 +120,10 @@ describe('Cleanup utility', () => {
     expect(result).toBeUndefined();
   });
 
-  test('should return early if inactiveDays is negative', () => {
-    const { mockUpdateMany, setIntervalSpy, result } = setupTest({ inactiveDays: -10 });
+  test("should return early if inactiveDays is negative", () => {
+    const { mockUpdateMany, setIntervalSpy, result } = setupTest({
+      inactiveDays: -10,
+    });
 
     // Verify nothing happened - early return
     expect(mockUpdateMany).not.toHaveBeenCalled();
@@ -120,7 +131,7 @@ describe('Cleanup utility', () => {
     expect(result).toBeUndefined();
   });
 
-  test('should not set up interval when disableInterval is true', () => {
+  test("should not set up interval when disableInterval is true", () => {
     const { mockUpdateMany, setIntervalSpy, result } = setupTest({
       inactiveDays: 30,
       disableInterval: true,
@@ -136,9 +147,11 @@ describe('Cleanup utility', () => {
     expect(result).toBeNull();
   });
 
-  test('should log errors if the cleanup job fails', async () => {
+  test("should log errors if the cleanup job fails", async () => {
     // Setup a test with a failing updateMany
-    const mockUpdateMany = jest.fn().mockRejectedValue(new Error('Database error'));
+    const mockUpdateMany = jest
+      .fn()
+      .mockRejectedValue(new Error("Database error"));
     const mockAdapter = { updateMany: mockUpdateMany };
     const mockContext = { adapter: mockAdapter };
 
@@ -156,15 +169,18 @@ describe('Cleanup utility', () => {
     await Promise.resolve();
 
     // Verify error was logged
-    expect(mockLogger.error).toHaveBeenCalledWith('Cleanup job failed:', expect.any(Error));
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Cleanup job failed:",
+      expect.any(Error),
+    );
   });
 
-  test('should log info about cleaned up passkeys in non-production', async () => {
+  test("should log info about cleaned up passkeys in non-production", async () => {
     const originalNodeEnv = process.env.NODE_ENV;
 
     try {
       // Set environment to development
-      process.env.NODE_ENV = 'development';
+      process.env.NODE_ENV = "development";
 
       const { mockLogger } = setupTest();
 
@@ -172,19 +188,21 @@ describe('Cleanup utility', () => {
       await Promise.resolve();
 
       // Verify info was logged
-      expect(mockLogger.info).toHaveBeenCalledWith('Cleaned up 5 inactive passkeys');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "Cleaned up 5 inactive passkeys",
+      );
     } finally {
       // Restore environment
       process.env.NODE_ENV = originalNodeEnv;
     }
   });
 
-  test('should not log info about cleaned up passkeys in production', async () => {
+  test("should not log info about cleaned up passkeys in production", async () => {
     const originalNodeEnv = process.env.NODE_ENV;
 
     try {
       // Set environment to production
-      process.env.NODE_ENV = 'production';
+      process.env.NODE_ENV = "production";
 
       const { mockLogger } = setupTest();
 

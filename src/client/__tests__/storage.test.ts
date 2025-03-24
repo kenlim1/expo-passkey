@@ -3,89 +3,89 @@
  * @module expo-passkey/utils/storage
  */
 
-import type { ExpoPasskeyClientOptions } from '../../types/client';
-import { getStorageKeys } from '../utils/storage';
+import type { ExpoPasskeyClientOptions } from "../../types/client";
+import { getStorageKeys } from "../utils/storage";
 
-describe('Storage utilities', () => {
-  describe('getStorageKeys', () => {
-    it('should use default prefix when no options are provided', () => {
+describe("Storage utilities", () => {
+  describe("getStorageKeys", () => {
+    it("should use default prefix when no options are provided", () => {
       const keys = getStorageKeys();
 
       expect(keys).toEqual({
-        DEVICE_ID: '_better-auth.device_id',
-        STATE: '_better-auth.passkey_state',
-        USER_ID: '_better-auth.user_id',
+        DEVICE_ID: "_better-auth.device_id",
+        STATE: "_better-auth.passkey_state",
+        USER_ID: "_better-auth.user_id",
       });
     });
 
-    it('should use default prefix when empty options are provided', () => {
+    it("should use default prefix when empty options are provided", () => {
       const keys = getStorageKeys({});
 
       expect(keys).toEqual({
-        DEVICE_ID: '_better-auth.device_id',
-        STATE: '_better-auth.passkey_state',
-        USER_ID: '_better-auth.user_id',
+        DEVICE_ID: "_better-auth.device_id",
+        STATE: "_better-auth.passkey_state",
+        USER_ID: "_better-auth.user_id",
       });
     });
 
-    it('should use custom prefix when provided', () => {
+    it("should use custom prefix when provided", () => {
       const options: ExpoPasskeyClientOptions = {
-        storagePrefix: 'myapp',
+        storagePrefix: "myapp",
       };
 
       const keys = getStorageKeys(options);
 
       expect(keys).toEqual({
-        DEVICE_ID: 'myapp.device_id',
-        STATE: 'myapp.passkey_state',
-        USER_ID: 'myapp.user_id',
+        DEVICE_ID: "myapp.device_id",
+        STATE: "myapp.passkey_state",
+        USER_ID: "myapp.user_id",
       });
     });
 
-    it('should use default prefix for empty string prefix', () => {
+    it("should use default prefix for empty string prefix", () => {
       const options: ExpoPasskeyClientOptions = {
-        storagePrefix: '',
+        storagePrefix: "",
       };
 
       const keys = getStorageKeys(options);
 
       // Empty string is falsy, so default prefix is used
       expect(keys).toEqual({
-        DEVICE_ID: '_better-auth.device_id',
-        STATE: '_better-auth.passkey_state',
-        USER_ID: '_better-auth.user_id',
+        DEVICE_ID: "_better-auth.device_id",
+        STATE: "_better-auth.passkey_state",
+        USER_ID: "_better-auth.user_id",
       });
     });
 
-    it('should handle numeric prefix', () => {
+    it("should handle numeric prefix", () => {
       const options: ExpoPasskeyClientOptions = {
-        storagePrefix: '123',
+        storagePrefix: "123",
       };
 
       const keys = getStorageKeys(options);
 
       expect(keys).toEqual({
-        DEVICE_ID: '123.device_id',
-        STATE: '123.passkey_state',
-        USER_ID: '123.user_id',
+        DEVICE_ID: "123.device_id",
+        STATE: "123.passkey_state",
+        USER_ID: "123.user_id",
       });
     });
 
-    it('should handle special characters in prefix', () => {
+    it("should handle special characters in prefix", () => {
       const options: ExpoPasskeyClientOptions = {
-        storagePrefix: 'app@special_chars',
+        storagePrefix: "app@special_chars",
       };
 
       const keys = getStorageKeys(options);
 
       expect(keys).toEqual({
-        DEVICE_ID: 'app@special_chars.device_id',
-        STATE: 'app@special_chars.passkey_state',
-        USER_ID: 'app@special_chars.user_id',
+        DEVICE_ID: "app@special_chars.device_id",
+        STATE: "app@special_chars.passkey_state",
+        USER_ID: "app@special_chars.user_id",
       });
     });
 
-    it('should handle undefined prefix by using default', () => {
+    it("should handle undefined prefix by using default", () => {
       const options: ExpoPasskeyClientOptions = {
         storagePrefix: undefined,
       };
@@ -93,9 +93,9 @@ describe('Storage utilities', () => {
       const keys = getStorageKeys(options);
 
       expect(keys).toEqual({
-        DEVICE_ID: '_better-auth.device_id',
-        STATE: '_better-auth.passkey_state',
-        USER_ID: '_better-auth.user_id',
+        DEVICE_ID: "_better-auth.device_id",
+        STATE: "_better-auth.passkey_state",
+        USER_ID: "_better-auth.user_id",
       });
     });
   });

@@ -1,6 +1,6 @@
-import { APIError } from 'better-call';
+import { APIError } from "better-call";
 
-import { createRevokeEndpoint } from '../../../server/endpoints/revoke';
+import { createRevokeEndpoint } from "../../../server/endpoints/revoke";
 
 // Mock logger
 const mockLogger = {
@@ -12,7 +12,7 @@ const mockLogger = {
 
 type EndpointHandler = (ctx: any) => Promise<any>;
 
-describe('revokePasskey endpoint', () => {
+describe("revokePasskey endpoint", () => {
   // Setup options for the endpoint
   const options = {
     logger: mockLogger,
@@ -21,9 +21,9 @@ describe('revokePasskey endpoint', () => {
   // Mock request context
   const mockCtx = {
     body: {
-      userId: 'user-123',
-      deviceId: 'device-123',
-      reason: 'lost_device',
+      userId: "user-123",
+      deviceId: "device-123",
+      reason: "lost_device",
     },
     context: {
       adapter: {
@@ -38,14 +38,14 @@ describe('revokePasskey endpoint', () => {
     jest.clearAllMocks();
   });
 
-  it('should revoke a passkey successfully', async () => {
+  it("should revoke a passkey successfully", async () => {
     // Mock credential exists
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
-      id: 'passkey-123',
-      userId: 'user-123',
-      deviceId: 'device-123',
-      platform: 'ios',
-      status: 'active',
+      id: "passkey-123",
+      userId: "user-123",
+      deviceId: "device-123",
+      platform: "ios",
+      status: "active",
     });
 
     // Create endpoint and get handler using type assertion
@@ -57,21 +57,21 @@ describe('revokePasskey endpoint', () => {
 
     // Verify credential lookup
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       where: [
-        { field: 'deviceId', operator: 'eq', value: 'device-123' },
-        { field: 'userId', operator: 'eq', value: 'user-123' },
-        { field: 'status', operator: 'eq', value: 'active' },
+        { field: "deviceId", operator: "eq", value: "device-123" },
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
       ],
     });
 
     // Verify update was performed
     expect(mockCtx.context.adapter.update).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
-      where: [{ field: 'id', operator: 'eq', value: 'passkey-123' }],
+      model: "mobilePasskey",
+      where: [{ field: "id", operator: "eq", value: "passkey-123" }],
       update: expect.objectContaining({
-        status: 'revoked',
-        revokedReason: 'lost_device',
+        status: "revoked",
+        revokedReason: "lost_device",
       }),
     });
 
@@ -80,27 +80,27 @@ describe('revokePasskey endpoint', () => {
 
     // Verify logging
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'Passkey revoked successfully',
-      expect.any(Object)
+      "Passkey revoked successfully",
+      expect.any(Object),
     );
   });
 
-  it('should use default reason if none provided', async () => {
+  it("should use default reason if none provided", async () => {
     // Mock credential exists
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
-      id: 'passkey-123',
-      userId: 'user-123',
-      deviceId: 'device-123',
-      platform: 'ios',
-      status: 'active',
+      id: "passkey-123",
+      userId: "user-123",
+      deviceId: "device-123",
+      platform: "ios",
+      status: "active",
     });
 
     // Create a modified context without reason
     const modifiedCtx = {
       ...mockCtx,
       body: {
-        userId: 'user-123',
-        deviceId: 'device-123',
+        userId: "user-123",
+        deviceId: "device-123",
         // No reason provided
       },
     };
@@ -116,13 +116,13 @@ describe('revokePasskey endpoint', () => {
     expect(mockCtx.context.adapter.update).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
-          revokedReason: 'user_initiated', // Default reason
+          revokedReason: "user_initiated", // Default reason
         }),
-      })
+      }),
     );
   });
 
-  it('should reject if the passkey is not found', async () => {
+  it("should reject if the passkey is not found", async () => {
     // Mock credential not found
     mockCtx.context.adapter.findOne.mockResolvedValueOnce(null);
 
@@ -135,11 +135,11 @@ describe('revokePasskey endpoint', () => {
 
     // Verify lookup was attempted
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: 'mobilePasskey',
+      model: "mobilePasskey",
       where: [
-        { field: 'deviceId', operator: 'eq', value: 'device-123' },
-        { field: 'userId', operator: 'eq', value: 'user-123' },
-        { field: 'status', operator: 'eq', value: 'active' },
+        { field: "deviceId", operator: "eq", value: "device-123" },
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
       ],
     });
 
@@ -148,23 +148,25 @@ describe('revokePasskey endpoint', () => {
 
     // Verify warning was logged
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Revoke failed: Passkey not found',
-      expect.any(Object)
+      "Revoke failed: Passkey not found",
+      expect.any(Object),
     );
   });
 
-  it('should handle database update errors gracefully', async () => {
+  it("should handle database update errors gracefully", async () => {
     // Mock credential exists
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
-      id: 'passkey-123',
-      userId: 'user-123',
-      deviceId: 'device-123',
-      platform: 'ios',
-      status: 'active',
+      id: "passkey-123",
+      userId: "user-123",
+      deviceId: "device-123",
+      platform: "ios",
+      status: "active",
     });
 
     // Mock update error
-    mockCtx.context.adapter.update.mockRejectedValueOnce(new Error('Database update failed'));
+    mockCtx.context.adapter.update.mockRejectedValueOnce(
+      new Error("Database update failed"),
+    );
 
     // Create endpoint and get handler using type assertion
     const endpoint = createRevokeEndpoint(options);
@@ -174,6 +176,9 @@ describe('revokePasskey endpoint', () => {
     await expect(handler(mockCtx as any)).rejects.toThrow(APIError);
 
     // Verify error was logged
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to revoke passkey', expect.any(Error));
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      "Failed to revoke passkey",
+      expect.any(Error),
+    );
   });
 });

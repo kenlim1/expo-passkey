@@ -3,20 +3,20 @@
  * @description Core implementation of the Expo Passkey server plugin
  */
 
-import { createAuthEndpoint } from 'better-auth/api';
-import type { AuthContext, BetterAuthPlugin } from 'better-auth/types';
-import { APIError } from 'better-call';
+import { createAuthEndpoint } from "better-auth/api";
+import type { AuthContext, BetterAuthPlugin } from "better-auth/types";
+import { APIError } from "better-call";
 
-import { ERROR_CODES, ERROR_MESSAGES } from '../types/errors';
-import type { ExpoPasskeyOptions } from '../types/server';
+import { ERROR_CODES, ERROR_MESSAGES } from "../types/errors";
+import type { ExpoPasskeyOptions } from "../types/server";
 
 import {
   createAuthenticateEndpoint,
   createListEndpoint,
   createRegisterEndpoint,
   createRevokeEndpoint,
-} from './endpoints';
-import { createLogger, createRateLimits, setupCleanupJob } from './utils';
+} from "./endpoints";
+import { createLogger, createRateLimits, setupCleanupJob } from "./utils";
 
 /**
  * Creates an instance of the Expo Passkey server plugin
@@ -29,7 +29,7 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
 
   // Validate required options
   if (!options.rpName || !options.rpId) {
-    throw new Error('rpName and rpId are required options');
+    throw new Error("rpName and rpId are required options");
   }
 
   // Configure endpoints with options
@@ -55,58 +55,58 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
   const rateLimits = createRateLimits(options.rateLimit);
 
   return {
-    id: 'expo-passkey',
+    id: "expo-passkey",
 
     // Database schema for plugin
     schema: {
       mobilePasskey: {
-        modelName: 'mobilePasskey',
+        modelName: "mobilePasskey",
         fields: {
           userId: {
-            type: 'string',
+            type: "string",
             required: true,
             references: {
-              model: 'user',
-              field: 'id',
-              onDelete: 'cascade',
+              model: "user",
+              field: "id",
+              onDelete: "cascade",
             },
           },
           deviceId: {
-            type: 'string',
+            type: "string",
             required: true,
             unique: true,
           },
           platform: {
-            type: 'string',
+            type: "string",
             required: true,
           },
           lastUsed: {
-            type: 'string',
+            type: "string",
             required: true,
           },
           status: {
-            type: 'string',
+            type: "string",
             required: true,
-            defaultValue: 'active',
+            defaultValue: "active",
           },
           createdAt: {
-            type: 'date',
+            type: "date",
             required: true,
           },
           updatedAt: {
-            type: 'date',
+            type: "date",
             required: true,
           },
           revokedAt: {
-            type: 'string',
+            type: "string",
             required: false,
           },
           revokedReason: {
-            type: 'string',
+            type: "string",
             required: false,
           },
           metadata: {
-            type: 'string',
+            type: "string",
             required: false,
           },
         },
@@ -114,8 +114,8 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
     },
     // Plugin initialization
     init: (ctx: AuthContext) => {
-      if (process.env.NODE_ENV !== 'production') {
-        logger.info('Initializing Expo Passkey plugin...');
+      if (process.env.NODE_ENV !== "production") {
+        logger.info("Initializing Expo Passkey plugin...");
       }
 
       // Set up cleanup job for inactive passkeys
@@ -125,30 +125,30 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
     // Middleware for all expo-passkey endpoints
     middlewares: [
       {
-        path: '/expo-passkey/**',
+        path: "/expo-passkey/**",
         middleware: createAuthEndpoint(
-          '/expo-passkey',
+          "/expo-passkey",
           {
-            method: 'GET',
+            method: "GET",
           },
           async (ctx) => {
             if (!ctx.headers) {
-              logger.warn('Missing headers in request');
-              throw new APIError('UNAUTHORIZED', {
+              logger.warn("Missing headers in request");
+              throw new APIError("UNAUTHORIZED", {
                 code: ERROR_CODES.SERVER.INVALID_CLIENT,
                 message: ERROR_MESSAGES[ERROR_CODES.SERVER.INVALID_CLIENT],
               });
             }
 
-            const origin = ctx.headers.get('origin');
+            const origin = ctx.headers.get("origin");
             if (origin && !ctx.context.trustedOrigins.includes(origin)) {
-              logger.warn('Invalid origin in request', { origin });
-              throw new APIError('UNAUTHORIZED', {
+              logger.warn("Invalid origin in request", { origin });
+              throw new APIError("UNAUTHORIZED", {
                 code: ERROR_CODES.SERVER.INVALID_ORIGIN,
                 message: ERROR_MESSAGES[ERROR_CODES.SERVER.INVALID_ORIGIN],
               });
             }
-          }
+          },
         ),
       },
     ],

@@ -5,21 +5,23 @@
 
 export interface LoggerOptions {
   enabled?: boolean;
-  level?: 'debug' | 'info' | 'warn' | 'error';
+  level?: "debug" | "info" | "warn" | "error";
 }
 
-export type LoggerLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LoggerLevel = "debug" | "info" | "warn" | "error";
 
 /**
  * Creates a logger instance with configurable log levels
  */
 export const createLogger = (options: LoggerOptions = {}) => {
   const enabled =
-    options.enabled !== undefined ? options.enabled : process.env.NODE_ENV === 'development';
+    options.enabled !== undefined
+      ? options.enabled
+      : process.env.NODE_ENV === "development";
 
   const opts = {
     enabled,
-    level: options.level ?? 'info',
+    level: options.level ?? "info",
   };
 
   // Log level priority
@@ -37,23 +39,23 @@ export const createLogger = (options: LoggerOptions = {}) => {
 
   return {
     debug: (...args: unknown[]) => {
-      if (shouldLog('debug')) {
-        console.debug('[ExpoPasskey]', ...args);
+      if (shouldLog("debug")) {
+        console.debug("[ExpoPasskey]", ...args);
       }
     },
     info: (...args: unknown[]) => {
-      if (shouldLog('info')) {
-        console.info('[ExpoPasskey]', ...args);
+      if (shouldLog("info")) {
+        console.info("[ExpoPasskey]", ...args);
       }
     },
     warn: (...args: unknown[]) => {
-      if (shouldLog('warn')) {
-        console.warn('[ExpoPasskey]', ...args);
+      if (shouldLog("warn")) {
+        console.warn("[ExpoPasskey]", ...args);
       }
     },
     error: (...args: unknown[]) => {
-      if (shouldLog('error')) {
-        console.error('[ExpoPasskey]', ...args);
+      if (shouldLog("error")) {
+        console.error("[ExpoPasskey]", ...args);
       }
     },
   };

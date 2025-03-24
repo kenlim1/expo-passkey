@@ -1,6 +1,6 @@
-import { createLogger } from '../../utils/logger';
+import { createLogger } from "../../utils/logger";
 
-describe('Logger utility', () => {
+describe("Logger utility", () => {
   // Save original console methods
   const originalConsole = {
     debug: console.debug,
@@ -25,7 +25,7 @@ describe('Logger utility', () => {
     console.error = originalConsole.error;
   });
 
-  it('should create a logger with default settings', () => {
+  it("should create a logger with default settings", () => {
     const logger = createLogger();
 
     expect(logger.debug).toBeDefined();
@@ -34,14 +34,14 @@ describe('Logger utility', () => {
     expect(logger.error).toBeDefined();
   });
 
-  it('should respect the enabled option', () => {
+  it("should respect the enabled option", () => {
     // Create a disabled logger
     const disabledLogger = createLogger({ enabled: false });
 
-    disabledLogger.debug('Test debug');
-    disabledLogger.info('Test info');
-    disabledLogger.warn('Test warn');
-    disabledLogger.error('Test error');
+    disabledLogger.debug("Test debug");
+    disabledLogger.info("Test info");
+    disabledLogger.warn("Test warn");
+    disabledLogger.error("Test error");
 
     expect(console.debug).not.toHaveBeenCalled();
     expect(console.info).not.toHaveBeenCalled();
@@ -51,97 +51,97 @@ describe('Logger utility', () => {
     // Create an enabled logger
     const enabledLogger = createLogger({ enabled: true });
 
-    enabledLogger.debug('Test debug');
-    enabledLogger.info('Test info');
-    enabledLogger.warn('Test warn');
-    enabledLogger.error('Test error');
+    enabledLogger.debug("Test debug");
+    enabledLogger.info("Test info");
+    enabledLogger.warn("Test warn");
+    enabledLogger.error("Test error");
 
     // Default level is 'info', so debug shouldn't be called
     expect(console.debug).not.toHaveBeenCalled();
-    expect(console.info).toHaveBeenCalledWith('[ExpoPasskey]', 'Test info');
-    expect(console.warn).toHaveBeenCalledWith('[ExpoPasskey]', 'Test warn');
-    expect(console.error).toHaveBeenCalledWith('[ExpoPasskey]', 'Test error');
+    expect(console.info).toHaveBeenCalledWith("[ExpoPasskey]", "Test info");
+    expect(console.warn).toHaveBeenCalledWith("[ExpoPasskey]", "Test warn");
+    expect(console.error).toHaveBeenCalledWith("[ExpoPasskey]", "Test error");
   });
 
-  it('should respect the log level option', () => {
+  it("should respect the log level option", () => {
     // Test 'debug' level
-    const debugLogger = createLogger({ enabled: true, level: 'debug' });
+    const debugLogger = createLogger({ enabled: true, level: "debug" });
 
-    debugLogger.debug('Test debug');
-    expect(console.debug).toHaveBeenCalledWith('[ExpoPasskey]', 'Test debug');
+    debugLogger.debug("Test debug");
+    expect(console.debug).toHaveBeenCalledWith("[ExpoPasskey]", "Test debug");
 
     // Reset mocks
     jest.clearAllMocks();
 
     // Test 'info' level
-    const infoLogger = createLogger({ enabled: true, level: 'info' });
+    const infoLogger = createLogger({ enabled: true, level: "info" });
 
-    infoLogger.debug('Test debug');
-    infoLogger.info('Test info');
+    infoLogger.debug("Test debug");
+    infoLogger.info("Test info");
 
     expect(console.debug).not.toHaveBeenCalled();
-    expect(console.info).toHaveBeenCalledWith('[ExpoPasskey]', 'Test info');
+    expect(console.info).toHaveBeenCalledWith("[ExpoPasskey]", "Test info");
 
     // Reset mocks
     jest.clearAllMocks();
 
     // Test 'warn' level
-    const warnLogger = createLogger({ enabled: true, level: 'warn' });
+    const warnLogger = createLogger({ enabled: true, level: "warn" });
 
-    warnLogger.debug('Test debug');
-    warnLogger.info('Test info');
-    warnLogger.warn('Test warn');
+    warnLogger.debug("Test debug");
+    warnLogger.info("Test info");
+    warnLogger.warn("Test warn");
 
     expect(console.debug).not.toHaveBeenCalled();
     expect(console.info).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith('[ExpoPasskey]', 'Test warn');
+    expect(console.warn).toHaveBeenCalledWith("[ExpoPasskey]", "Test warn");
 
     // Reset mocks
     jest.clearAllMocks();
 
     // Test 'error' level
-    const errorLogger = createLogger({ enabled: true, level: 'error' });
+    const errorLogger = createLogger({ enabled: true, level: "error" });
 
-    errorLogger.debug('Test debug');
-    errorLogger.info('Test info');
-    errorLogger.warn('Test warn');
-    errorLogger.error('Test error');
+    errorLogger.debug("Test debug");
+    errorLogger.info("Test info");
+    errorLogger.warn("Test warn");
+    errorLogger.error("Test error");
 
     expect(console.debug).not.toHaveBeenCalled();
     expect(console.info).not.toHaveBeenCalled();
     expect(console.warn).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith('[ExpoPasskey]', 'Test error');
+    expect(console.error).toHaveBeenCalledWith("[ExpoPasskey]", "Test error");
   });
 
-  it('should handle multiple arguments', () => {
+  it("should handle multiple arguments", () => {
     const logger = createLogger({ enabled: true });
 
-    const testObject = { key: 'value' };
-    const testError = new Error('Test error');
+    const testObject = { key: "value" };
+    const testError = new Error("Test error");
 
-    logger.info('Test message', testObject, testError);
+    logger.info("Test message", testObject, testError);
 
     expect(console.info).toHaveBeenCalledWith(
-      '[ExpoPasskey]',
-      'Test message',
+      "[ExpoPasskey]",
+      "Test message",
       testObject,
-      testError
+      testError,
     );
   });
 
-  it('should default to development mode settings in NODE_ENV=development', () => {
+  it("should default to development mode settings in NODE_ENV=development", () => {
     // Save original NODE_ENV
     const originalNodeEnv = process.env.NODE_ENV;
 
     // Set NODE_ENV to development
-    process.env.NODE_ENV = 'development';
+    process.env.NODE_ENV = "development";
 
     const logger = createLogger();
 
-    logger.info('Test info');
+    logger.info("Test info");
 
     // In development, logging should be enabled by default
-    expect(console.info).toHaveBeenCalledWith('[ExpoPasskey]', 'Test info');
+    expect(console.info).toHaveBeenCalledWith("[ExpoPasskey]", "Test info");
 
     // Restore original NODE_ENV
     process.env.NODE_ENV = originalNodeEnv;

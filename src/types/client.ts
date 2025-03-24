@@ -3,10 +3,10 @@
  * @module expo-passkey/types/client
  */
 
-import type { BetterAuthPlugin, User } from 'better-auth/types';
+import type { BetterAuthPlugin, User } from "better-auth/types";
 
-import type { BiometricSupportInfo } from './passkey';
-import type { MobilePasskey } from './server';
+import type { BiometricSupportInfo } from "./passkey";
+import type { MobilePasskey } from "./server";
 
 /**
  * Client options for the Expo Passkey plugin
@@ -108,22 +108,22 @@ export interface PasskeyRegistrationCheckResult {
  * Server plugin definition for type inference
  */
 export type ExpoPasskeyServerPlugin = BetterAuthPlugin & {
-  id: 'expo-passkey';
+  id: "expo-passkey";
   endpoints: {
     registerPasskey: {
-      path: '/expo-passkey/register';
+      path: "/expo-passkey/register";
       response: { data: RegisterPasskeySuccessResponse; error?: FetchError };
     };
     authenticatePasskey: {
-      path: '/expo-passkey/authenticate';
+      path: "/expo-passkey/authenticate";
       response: { data: AuthPasskeySuccessResponse; error?: FetchError };
     };
     listPasskeys: {
-      path: '/expo-passkey/list/:userId';
+      path: "/expo-passkey/list/:userId";
       response: { data: ListPasskeysSuccessResponse; error?: FetchError };
     };
     revokePasskey: {
-      path: '/expo-passkey/revoke';
+      path: "/expo-passkey/revoke";
       response: { data: { success: boolean }; error?: FetchError };
     };
   };

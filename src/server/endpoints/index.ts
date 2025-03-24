@@ -1,7 +1,7 @@
-export { createRegisterEndpoint } from './register';
+export { createRegisterEndpoint } from "./register";
 
-export { createAuthenticateEndpoint } from './authenticate';
+export { createAuthenticateEndpoint } from "./authenticate";
 
-export { createListEndpoint } from './list';
+export { createListEndpoint } from "./list";
 
-export { createRevokeEndpoint } from './revoke';
+export { createRevokeEndpoint } from "./revoke";

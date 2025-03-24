@@ -3,7 +3,7 @@
  * @description Zod schema definitions for request validation
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Schema for passkey registration requests
@@ -53,8 +53,8 @@ export const listPasskeysQuerySchema = z.object({
  */
 export const listPasskeysParamsSchema = z.object({
   userId: z.string({
-    description: 'User ID to fetch passkeys for',
-    required_error: 'User ID is required',
+    description: "User ID to fetch passkeys for",
+    required_error: "User ID is required",
   }),
 });
 

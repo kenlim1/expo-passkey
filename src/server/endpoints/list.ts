@@ -3,14 +3,17 @@
  * @description Implementation of the endpoint to list user passkeys
  */
 
-import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api';
-import { APIError } from 'better-call';
+import { createAuthEndpoint, sessionMiddleware } from "better-auth/api";
+import { APIError } from "better-call";
 
-import { ERROR_CODES, ERROR_MESSAGES } from '../../types/errors';
-import type { Logger } from '../utils/logger';
-import { listPasskeysParamsSchema, listPasskeysQuerySchema } from '../utils/schema';
+import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
+import type { Logger } from "../utils/logger";
+import {
+  listPasskeysParamsSchema,
+  listPasskeysQuerySchema,
+} from "../utils/schema";
 
-import type { MobilePasskey } from '~/types';
+import type { MobilePasskey } from "~/types";
 
 /**
  * Create endpoint to list user passkeys
@@ -19,83 +22,83 @@ export const createListEndpoint = (options: { logger: Logger }) => {
   const { logger } = options;
 
   return createAuthEndpoint(
-    '/expo-passkey/list/:userId',
+    "/expo-passkey/list/:userId",
     {
-      method: 'GET',
+      method: "GET",
       params: listPasskeysParamsSchema,
       query: listPasskeysQuerySchema,
       use: [sessionMiddleware],
       metadata: {
         openapi: {
-          description: 'Retrieve a list of registered passkeys for the user',
-          tags: ['Authentication'],
+          description: "Retrieve a list of registered passkeys for the user",
+          tags: ["Authentication"],
           responses: {
             200: {
-              description: 'List of passkeys',
+              description: "List of passkeys",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       passkeys: {
-                        type: 'array',
+                        type: "array",
                         items: {
-                          type: 'object',
+                          type: "object",
                           properties: {
-                            id: { type: 'string' },
-                            userId: { type: 'string' },
-                            deviceId: { type: 'string' },
-                            platform: { type: 'string' },
+                            id: { type: "string" },
+                            userId: { type: "string" },
+                            deviceId: { type: "string" },
+                            platform: { type: "string" },
                             lastUsed: {
-                              type: 'string',
-                              format: 'date-time',
+                              type: "string",
+                              format: "date-time",
                             },
                             status: {
-                              type: 'string',
-                              enum: ['active', 'revoked'],
+                              type: "string",
+                              enum: ["active", "revoked"],
                             },
                             createdAt: {
-                              type: 'string',
-                              format: 'date-time',
+                              type: "string",
+                              format: "date-time",
                             },
                             updatedAt: {
-                              type: 'string',
-                              format: 'date-time',
+                              type: "string",
+                              format: "date-time",
                             },
                             revokedAt: {
-                              type: 'string',
-                              format: 'date-time',
+                              type: "string",
+                              format: "date-time",
                               nullable: true,
                             },
                             revokedReason: {
-                              type: 'string',
+                              type: "string",
                               nullable: true,
                             },
                             metadata: {
-                              type: 'object',
+                              type: "object",
                               additionalProperties: true,
                             },
                           },
                         },
                       },
-                      nextOffset: { type: 'number', nullable: true },
+                      nextOffset: { type: "number", nullable: true },
                     },
                   },
                 },
               },
             },
             401: {
-              description: 'Unauthorized',
+              description: "Unauthorized",
               content: {
-                'application/json': {
+                "application/json": {
                   schema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       error: {
-                        type: 'object',
+                        type: "object",
                         properties: {
-                          code: { type: 'string' },
-                          message: { type: 'string' },
+                          code: { type: "string" },
+                          message: { type: "string" },
                         },
                       },
                     },
@@ -110,10 +113,10 @@ export const createListEndpoint = (options: { logger: Logger }) => {
     async (ctx) => {
       try {
         const userId = ctx.params.userId;
-        const limit = parseInt(ctx.query.limit || '10', 10);
+        const limit = parseInt(ctx.query.limit || "10", 10);
         const offset = ctx.query.offset ? parseInt(ctx.query.offset, 10) : 0;
 
-        logger.debug('Server received passkey list request:', {
+        logger.debug("Server received passkey list request:", {
           userId,
           limit,
           offset,
@@ -121,24 +124,24 @@ export const createListEndpoint = (options: { logger: Logger }) => {
 
         // Verify session matches userId for security
         if (ctx.context.session?.user?.id !== userId) {
-          logger.warn('Unauthorized attempt to list passkeys', {
+          logger.warn("Unauthorized attempt to list passkeys", {
             requestedUserId: userId,
             sessionUserId: ctx.context.session?.user?.id,
           });
-          throw new APIError('UNAUTHORIZED', {
-            code: 'UNAUTHORIZED_ACCESS',
-            message: 'You can only view your own passkeys',
+          throw new APIError("UNAUTHORIZED", {
+            code: "UNAUTHORIZED_ACCESS",
+            message: "You can only view your own passkeys",
           });
         }
 
         // Fetch passkeys with pagination
         const passkeys = await ctx.context.adapter.findMany<MobilePasskey>({
-          model: 'mobilePasskey',
+          model: "mobilePasskey",
           where: [
-            { field: 'userId', operator: 'eq', value: userId },
-            { field: 'status', operator: 'eq', value: 'active' },
+            { field: "userId", operator: "eq", value: userId },
+            { field: "status", operator: "eq", value: "active" },
           ],
-          sortBy: { field: 'lastUsed', direction: 'desc' },
+          sortBy: { field: "lastUsed", direction: "desc" },
           limit: limit + 1,
           offset,
         });
@@ -159,10 +162,12 @@ export const createListEndpoint = (options: { logger: Logger }) => {
           updatedAt: passkey.updatedAt,
           revokedAt: passkey.revokedAt,
           revokedReason: passkey.revokedReason,
-          metadata: passkey.metadata ? JSON.parse(passkey.metadata as string) : {},
+          metadata: passkey.metadata
+            ? JSON.parse(passkey.metadata as string)
+            : {},
         }));
 
-        logger.debug('Returning passkeys:', {
+        logger.debug("Returning passkeys:", {
           count: formattedPasskeys.length,
           hasMore,
           nextOffset: hasMore ? offset + limit : undefined,
@@ -173,17 +178,17 @@ export const createListEndpoint = (options: { logger: Logger }) => {
           nextOffset: hasMore ? offset + limit : undefined,
         });
       } catch (error) {
-        logger.error('Server error in listPasskeys:', error);
+        logger.error("Server error in listPasskeys:", error);
 
         if (error instanceof APIError) {
           throw error;
         }
 
-        throw new APIError('BAD_REQUEST', {
+        throw new APIError("BAD_REQUEST", {
           code: ERROR_CODES.SERVER.PASSKEYS_RETRIEVAL_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.PASSKEYS_RETRIEVAL_FAILED],
         });
       }
-    }
+    },
   );
 };
