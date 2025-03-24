@@ -72,7 +72,10 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
     try {
       return loadExpoModules();
     } catch (error) {
-      // Rethrow any errors from loadExpoModules
+      console.warn(
+        "Failed to load Expo modules. Ensure all required dependencies are installed.",
+        error,
+      );
       throw error;
     }
   };
@@ -489,10 +492,9 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         },
         init: async (url: string, options?: BetterFetchOption) => {
           try {
-            // Get modules only when plugin is initialized
-            const { Platform } = getModules();
+            const modules = getModules();
+            const Platform = modules.Platform;
 
-            // Add custom headers or modify request options
             return {
               url,
               options: {
@@ -501,14 +503,13 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   ...options?.headers,
                   "X-Client-Type": "expo-passkey",
                   "X-Client-Version": "1.0.0",
-                  "X-Platform": Platform.OS,
-                  "X-Platform-Version": Platform.Version.toString(),
+                  "X-Platform": Platform.OS || "unknown",
+                  "X-Platform-Version": (Platform.Version || "0").toString(),
                 },
               },
             };
           } catch (error) {
-            // If there's an error loading modules, just return the URL and options as is
-            // without customizing the headers
+            // If module loading fails, return original URL and options
             console.warn("Could not add custom platform headers:", error);
             return { url, options };
           }
