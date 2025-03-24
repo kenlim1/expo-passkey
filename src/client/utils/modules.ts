@@ -4,11 +4,9 @@
  */
 
 import { ERROR_CODES, PasskeyError } from "../../types/errors";
-import { isExpoEnvironment } from "../utils/environment";
+import { isExpoEnvironment } from "./environment";
 
-/**
- * Interface for the loaded modules
- */
+// Interface for the loaded modules
 export interface ExpoModules {
   Platform: typeof import("react-native").Platform;
   Application: typeof import("expo-application");
@@ -18,12 +16,20 @@ export interface ExpoModules {
   Crypto: typeof import("expo-crypto");
 }
 
+// Create a cached modules variable
+let cachedModules: ExpoModules | null = null;
+
 /**
  * Loads all required Expo modules
  * @returns Object containing all required modules
  * @throws {PasskeyError} If not in an Expo environment or a required module is missing
  */
 export function loadExpoModules(): ExpoModules {
+  // Return cached modules if available
+  if (cachedModules) {
+    return cachedModules;
+  }
+
   // Check if running in Expo environment
   if (!isExpoEnvironment()) {
     throw new PasskeyError(
@@ -34,7 +40,7 @@ export function loadExpoModules(): ExpoModules {
 
   try {
     // Load all required modules
-    return {
+    cachedModules = {
       Platform: require("react-native").Platform,
       Application: require("expo-application"),
       Device: require("expo-device"),
@@ -42,6 +48,8 @@ export function loadExpoModules(): ExpoModules {
       SecureStore: require("expo-secure-store"),
       Crypto: require("expo-crypto"),
     };
+
+    return cachedModules;
   } catch (error) {
     // If a module is missing, throw a clear error
     const errorMessage =

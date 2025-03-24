@@ -64,9 +64,18 @@ class ExpoPasskeyClient {
  * @returns Better Auth client plugin instance
  */
 export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
-  // load required modules
-  const { Platform } = loadExpoModules();
+  // Create client without immediately loading modules
   const client = new ExpoPasskeyClient(options);
+
+  // Helper function to get modules lazily
+  const getModules = () => {
+    try {
+      return loadExpoModules();
+    } catch (error) {
+      // Rethrow any errors from loadExpoModules
+      throw error;
+    }
+  };
 
   return {
     id: "expo-passkey",
@@ -92,6 +101,9 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         fetchOptions?: BetterFetchOption,
       ): Promise<RegisterPasskeyResult> => {
         try {
+          // Get modules only when function is called
+          const { Platform } = getModules();
+
           // Get device information
           const deviceInfo = await client.getDeviceInformation();
 
@@ -174,6 +186,9 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         fetchOptions?: BetterFetchOption,
       ): Promise<AuthenticatePasskeyResult> => {
         try {
+          // Get modules only when function is called
+          const { Platform } = getModules();
+
           const deviceInfo = await client.getDeviceInformation();
 
           // Check biometric support
@@ -407,6 +422,9 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
        */
       isPasskeySupported: async () => {
         try {
+          // Get modules only when function is called
+          const { Platform } = getModules();
+
           const deviceInfo = await client.getDeviceInformation();
           const { biometricSupport } = deviceInfo;
 
@@ -470,20 +488,30 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           },
         },
         init: async (url: string, options?: BetterFetchOption) => {
-          // Add custom headers or modify request options
-          return {
-            url,
-            options: {
-              ...options,
-              headers: {
-                ...options?.headers,
-                "X-Client-Type": "expo-passkey",
-                "X-Client-Version": "1.0.0",
-                "X-Platform": Platform.OS,
-                "X-Platform-Version": Platform.Version.toString(),
+          try {
+            // Get modules only when plugin is initialized
+            const { Platform } = getModules();
+
+            // Add custom headers or modify request options
+            return {
+              url,
+              options: {
+                ...options,
+                headers: {
+                  ...options?.headers,
+                  "X-Client-Type": "expo-passkey",
+                  "X-Client-Version": "1.0.0",
+                  "X-Platform": Platform.OS,
+                  "X-Platform-Version": Platform.Version.toString(),
+                },
               },
-            },
-          };
+            };
+          } catch (error) {
+            // If there's an error loading modules, just return the URL and options as is
+            // without customizing the headers
+            console.warn("Could not add custom platform headers:", error);
+            return { url, options };
+          }
         },
       } satisfies BetterFetchPlugin,
     ],

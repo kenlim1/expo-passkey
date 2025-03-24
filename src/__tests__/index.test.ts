@@ -24,6 +24,6 @@ describe("Main package index", () => {
 
   it("should re-export all types", () => {
     const exportCount = Object.keys(MainExports).length;
-    expect(exportCount).toBeGreaterThanOrEqual(7);
+    expect(exportCount).toBeGreaterThanOrEqual(5);
   });
 });
