@@ -7,7 +7,6 @@ export default defineConfig([
       index: 'src/index.ts',
       'client/index': 'src/client/index.ts',
       'server/index': 'src/server/index.ts',
-      'utils/index': 'src/utils/index.ts',
       'types/index': 'src/types/index.ts',
       'types/passkey': 'src/types/passkey.ts',
       'types/client': 'src/types/client.ts',
@@ -38,7 +37,7 @@ export default defineConfig([
       index: 'src/index.ts',
       'client/index': 'src/client/index.ts',
       'server/index': 'src/server/index.ts',
-      'utils/index': 'src/utils/index.ts',
+
       'types/index': 'src/types/index.ts',
       'types/passkey': 'src/types/passkey.ts',
       'types/client': 'src/types/client.ts',
