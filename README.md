@@ -1,8 +1,11 @@
 # Expo Passkey
 
-<img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-blue" alt="Platform iOS | Android" />
-<img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
-<img src="https://img.shields.io/badge/TypeScript-Ready-blue" alt="TypeScript Ready" />
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-blue" alt="Platform iOS | Android" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
+  <img src="https://img.shields.io/badge/TypeScript-Ready-blue" alt="TypeScript Ready" />
+  <img src="https://img.shields.io/badge/Status-Beta-yellow" alt="Beta Status" />
+</p>
 
 A Better Auth plugin enabling secure, passwordless authentication in Expo applications through native biometric authentication.
 
@@ -15,11 +18,15 @@ A Better Auth plugin enabling secure, passwordless authentication in Expo applic
 - [Quick Start](#quick-start)
 - [Detailed Setup](#detailed-setup)
 - [Usage Examples](#usage-examples)
-- [API Reference](#api-reference)
+- [Complete API Reference](#complete-api-reference)
+- [Database Schema](#database-schema)
+- [UI Components](#ui-components)
+- [Integration With Better Auth](#integration-with-better-auth)
+- [Hooks and Patterns](#hooks-and-patterns)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
 - [Error Handling](#error-handling)
--[Bugs](#bugs-and-known-issues)
+- [Bugs and Known Issues](#bugs-and-known-issues)
 - [License](#license)
 
 ## Overview
@@ -36,8 +43,10 @@ This plugin implements FIDO2-inspired passkey authentication by connecting Bette
 - ✅ **Complete Lifecycle Management**: Registration, authentication, and revocation flows
 - ✅ **Type-Safe API**: Comprehensive TypeScript definitions and autocomplete
 - ✅ **Secure Device Binding**: Ensures keys are bound to specific devices
+- ✅ **Database Integration**: Automatically creates a MobilePasskey model in your database
 - ✅ **Automatic Cleanup**: Optional automatic revocation of unused passkeys
 - ✅ **Rich Metadata**: Store and retrieve device-specific context with each passkey
+- ✅ **Custom UI Hooks**: Simplifies integration in your React Native UI
 
 ## Platform Requirements
 
@@ -49,7 +58,7 @@ This plugin implements FIDO2-inspired passkey authentication by connecting Bette
 ## Installation
 
 ### Client Installation
-
+In your expo app:
 ```bash
 # Install the package
 npm i expo-passkey
@@ -59,7 +68,7 @@ npx expo install expo-application expo-local-authentication expo-secure-store ex
 ```
 
 ### Server Installation
-
+In your auth server:
 ```bash
 # Install the package
 npm i expo-passkey
@@ -253,52 +262,13 @@ try {
 }
 ```
 
-### Managing Passkeys
-
-```typescript
-import { listPasskeys, revokePasskey, getBiometricInfo } from "./auth-client";
-
-// Get current device ID
-const deviceInfo = await getBiometricInfo();
-const currentDeviceId = deviceInfo.deviceId;
-
-// List all passkeys for the user
-const listResult = await listPasskeys({ 
-  userId: "user-123",
-  limit: 10,
-  offset: 0
-});
-
-if (listResult.data) {
-  const passkeys = listResult.data.passkeys;
-  console.log(`Found ${passkeys.length} passkeys`);
-  
-  // Identify current device's passkey
-  const currentDevicePasskey = passkeys.find(pk => pk.deviceId === currentDeviceId);
-  if (currentDevicePasskey) {
-    console.log("This device has a registered passkey");
-  }
-}
-
-// Revoke a passkey
-const revokeResult = await revokePasskey({
-  userId: "user-123",
-  deviceId: "device-to-revoke",
-  reason: "user_requested"
-});
-
-if (revokeResult.data?.success) {
-  console.log("Passkey successfully revoked");
-}
-```
-
-### Basic Custom Hook
+### Custom Passkey Status Hook
 
 ```typescript
 import { useState, useEffect } from "react";
 import { isPasskeySupported, checkPasskeyRegistration } from "./auth-client";
 
-function usePasskeyStatus(userId) {
+export function usePasskeyStatus(userId) {
   const [isSupported, setIsSupported] = useState(false);
   const [hasPasskey, setHasPasskey] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -331,13 +301,77 @@ function usePasskeyStatus(userId) {
 }
 ```
 
-## API Reference
+### Comprehensive Passkeys Hook
+
+```typescript
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { listPasskeys, getStorageKeys } from "./auth-client";
+import * as SecureStore from "expo-secure-store";
+import type { MobilePasskey } from "expo-passkey";
+
+export function usePasskeys(userId) {
+  const [currentDeviceId, setCurrentDeviceId] = useState(null);
+
+  // Fetch current device ID
+  const fetchDeviceId = async () => {
+    try {
+      const STORAGE_KEYS = getStorageKeys();
+      const deviceId = await SecureStore.getItemAsync(STORAGE_KEYS.DEVICE_ID);
+      setCurrentDeviceId(deviceId);
+      return deviceId;
+    } catch (error) {
+      console.error("Error fetching device ID:", error);
+      return null;
+    }
+  };
+
+  // Main query to fetch passkeys
+  const {
+    data: result,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["passkeys", userId],
+    queryFn: async () => {
+      // Make sure we have the current device ID
+      await fetchDeviceId();
+
+      // Call the listPasskeys function
+      const result = await listPasskeys({ userId });
+      if (result.error) throw result.error;
+      return result;
+    },
+    enabled: !!userId,
+  });
+
+  // Process the result
+  const passkeys = result?.data?.passkeys || [];
+  const hasRegisteredPasskey = passkeys.length > 0;
+  const currentDeviceHasPasskey = passkeys.some(
+    (pk) => pk.deviceId === currentDeviceId
+  );
+
+  return {
+    passkeys,
+    hasRegisteredPasskey,
+    currentDeviceHasPasskey,
+    currentDeviceId,
+    isLoading,
+    refetch,
+    error: error instanceof Error ? error : null,
+  };
+}
+```
+
+## Complete API Reference
 
 ### Client API
 
-#### `registerPasskey(options)`
+#### `registerPasskey(options): Promise<RegisterPasskeyResult>`
 
-Registers a new passkey for a user.
+Registers a new passkey for a user. This will prompt for biometric authentication.
 
 ```typescript
 interface RegisterOptions {
@@ -351,11 +385,12 @@ interface RegisterOptions {
     manufacturer?: string;     // Device manufacturer
     brand?: string;            // Device brand
     biometricType?: string;    // Type of biometric used
+    [key: string]: any;        // Any other custom metadata
   };
 }
 
-// Return value
-interface RegisterResult {
+// Return type
+interface RegisterPasskeyResult {
   data: { 
     success: boolean; 
     rpName: string;            // Relying party name from server config 
@@ -365,91 +400,114 @@ interface RegisterResult {
 }
 ```
 
-#### `authenticateWithPasskey(options?)`
+#### `authenticateWithPasskey(options?): Promise<AuthenticatePasskeyResult>`
 
-Authenticates a user with a registered passkey.
+Authenticates a user with a registered passkey. This will prompt for biometric authentication.
 
 ```typescript
 interface AuthenticateOptions {
-  deviceId?: string;           // Optional: Override device ID
+  deviceId?: string;           // Optional: Override automatic device ID
   metadata?: {                 // Optional: Additional metadata to update
     lastLocation?: string;     // Context where authentication occurred
     appVersion?: string;       // App version
-    // ...other metadata fields
+    [key: string]: any;        // Any other custom metadata
   };
 }
 
-// Return value 
-interface AuthenticateResult {
+// Return type
+interface AuthenticatePasskeyResult {
   data: { 
-    token: string;             // Session token
-    user: User;                // User object
+    token: string;             // Session token for authentication
+    user: {                    // User object
+      id: string;              // User ID
+      email: string;           // User email
+      [key: string]: any;      // Any other user properties
+    };
   } | null;
   error: Error | null;
 }
 ```
 
-#### `listPasskeys(options)`
+#### `listPasskeys(options): Promise<ListPasskeysResult>`
 
-Lists passkeys registered for a user.
+Lists all passkeys registered for a user. Useful for managing devices.
 
 ```typescript
 interface ListOptions {
   userId: string;              // Required: User ID
-  limit?: number;              // Optional: Pagination limit
-  offset?: number;             // Optional: Pagination offset
+  limit?: number;              // Optional: Pagination limit (default: 10)
+  offset?: number;             // Optional: Pagination offset (default: 0)
 }
 
-// Return value
-interface ListResult {
+// Return type
+interface ListPasskeysResult {
   data: { 
-    passkeys: Array<{
-      id: string;              // Passkey ID
-      userId: string;          // User ID
-      deviceId: string;        // Device ID  
-      platform: string;        // Platform (ios/android)
-      lastUsed: string;        // ISO timestamp
-      status: "active" | "revoked";
-      createdAt: string;       // ISO timestamp
-      updatedAt: string;       // ISO timestamp
-      metadata: any;           // Parsed metadata
-    }>;
+    passkeys: Array<MobilePasskey>; // Array of passkey objects
     nextOffset?: number;       // Pagination offset for next page
   } | null;
   error: Error | null;
 }
+
+// MobilePasskey type
+interface MobilePasskey {
+  id: string;                  // Passkey ID
+  userId: string;              // User ID
+  deviceId: string;            // Device ID  
+  platform: string;            // Platform (ios/android)
+  lastUsed: string;            // ISO timestamp
+  status: "active" | "revoked";
+  createdAt: string;           // ISO timestamp
+  updatedAt: string;           // ISO timestamp
+  revokedAt?: string;          // ISO timestamp (if revoked)
+  revokedReason?: string;      // Reason for revocation
+  metadata: string | Record<string, any>; // Parsed metadata or JSON string
+}
 ```
 
-#### `revokePasskey(options)`
+#### `revokePasskey(options): Promise<RevokePasskeyResult>`
 
-Revokes a passkey.
+Revokes a passkey, preventing it from being used for authentication.
 
 ```typescript
 interface RevokeOptions {
   userId: string;              // Required: User ID
-  deviceId?: string;           // Optional: Override device ID
+  deviceId?: string;           // Optional: Override automatic device ID
   reason?: string;             // Optional: Reason for revocation
 }
 
-// Return value
-interface RevokeResult {
+// Return type
+interface RevokePasskeyResult {
   data: { success: boolean } | null;
   error: Error | null;
 }
 ```
 
-#### `getBiometricInfo()`
+#### `checkPasskeyRegistration(userId: string): Promise<PasskeyRegistrationCheckResult>`
 
-Gets information about the device's biometric capabilities.
+Checks if the current device has a registered passkey for the given user.
 
 ```typescript
-// Return value
+// Return type
+interface PasskeyRegistrationCheckResult {
+  isRegistered: boolean;       // Whether device has a registered passkey
+  deviceId: string | null;     // Device ID
+  biometricSupport: BiometricSupportInfo | null; // Biometric support info
+  error: Error | null;         // Error if any
+}
+```
+
+#### `getBiometricInfo(): Promise<DeviceInfo>`
+
+Gets information about the device's biometric capabilities, platform, and configuration.
+
+```typescript
+// Return type
 interface DeviceInfo {
   deviceId: string;            // Unique device identifier
   platform: "ios" | "android"; // Device platform
-  model: string | null;        // Device model
-  manufacturer: string | null; // Device manufacturer
-  osVersion: string;           // OS version
+  model: string | null;        // Device model (e.g. "iPhone 14")
+  manufacturer: string | null; // Device manufacturer (e.g. "Apple")
+  osVersion: string;           // OS version (e.g. "16.0")
   appVersion: string;          // App version
   biometricSupport: {
     isSupported: boolean;      // Whether biometrics are supported
@@ -460,7 +518,7 @@ interface DeviceInfo {
     platformDetails: {         // Platform-specific details
       platform: string;
       version: string | number;
-      apiLevel?: number | null;
+      apiLevel?: number | null; // Android API level
       manufacturer?: string | null;
       brand?: string | null;
     }
@@ -468,39 +526,528 @@ interface DeviceInfo {
 }
 ```
 
-#### `isPasskeySupported()`
+#### `isPasskeySupported(): Promise<boolean>`
 
-Checks if passkeys are supported on the current device.
+Checks if passkeys are supported on the current device based on platform, OS version, and biometric capabilities.
 
 ```typescript
 // Returns: boolean
-// true if device supports passkeys, false otherwise
+// true if the device supports passkeys, false otherwise
 ```
 
-#### `checkPasskeyRegistration(userId: string)`
+#### `getStorageKeys(): StorageKeys`
 
-Checks if the current device has a registered passkey for the given user.
-
-```typescript
-// Return value
-interface PasskeyRegistrationCheckResult {
-  isRegistered: boolean;       // Whether device has a registered passkey
-  deviceId: string | null;     // Device ID
-  biometricSupport: BiometricSupportInfo | null; // Biometric support info
-  error: Error | null;         // Error if any
-}
-```
-
-#### `getStorageKeys()`
-
-Gets the storage keys used by the plugin.
+Gets the storage keys used by the plugin for secure storage.
 
 ```typescript
-// Returns
+// Return type
 interface StorageKeys {
   DEVICE_ID: string;           // Key for device ID in SecureStore
   STATE: string;               // Key for state in SecureStore
   USER_ID: string;             // Key for user ID in SecureStore
+}
+```
+
+### Server API
+
+#### `expoPasskey(options): BetterAuthPlugin`
+
+Creates a server-side plugin for handling passkey operations.
+
+```typescript
+interface ExpoPasskeyOptions {
+  rpId: string;                // Required: Relying Party ID (domain)
+  rpName: string;              // Required: Human-readable app name
+  
+  // Optional settings
+  logger?: {
+    enabled?: boolean;         // Enable logging (default: true in dev)
+    level?: "debug" | "info" | "warn" | "error"; // Log level
+  };
+  
+  rateLimit?: {
+    registerWindow?: number;   // Time window for rate limiting (seconds)
+    registerMax?: number;      // Max registration attempts in window
+    authenticateWindow?: number; // Time window for auth attempts
+    authenticateMax?: number;  // Max auth attempts in window
+  };
+  
+  cleanup?: {
+    inactiveDays?: number;     // Days after which to revoke inactive passkeys
+    disableInterval?: boolean; // Disable automatic cleanup (for serverless)
+  };
+}
+```
+
+## Database Schema
+
+The plugin automatically creates a `mobilePasskey` table in your database with the following schema:
+
+```typescript
+{
+  id: string;                  // Unique identifier
+  userId: string;              // User ID (references user.id)
+  deviceId: string;            // Device identifier
+  platform: string;            // "ios" or "android"
+  lastUsed: string;            // ISO timestamp 
+  status: "active" | "revoked"; // Status
+  createdAt: Date;             // Creation timestamp
+  updatedAt: Date;             // Last update timestamp
+  revokedAt?: string;          // Revocation timestamp (if applicable)
+  revokedReason?: string;      // Reason for revocation (if applicable)
+  metadata: string;            // JSON string of device metadata
+}
+```
+
+## UI Components
+
+Here are examples of useful UI components you can create to work with this package:
+
+### PasskeyRegistrationButton Component
+
+```tsx
+import React, { useState, useEffect } from "react";
+import { View, Pressable, ActivityIndicator, Platform, Alert, Linking } from "react-native";
+import { Text } from "./ui/text";
+import { registerPasskey, getBiometricInfo } from "../lib/auth-client";
+import * as Application from "expo-application";
+
+export const PasskeyRegistration = ({
+  userId,
+  onComplete,
+}: {
+  userId: string;
+  onComplete?: () => void;
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [biometricInfo, setBiometricInfo] = useState(null);
+
+  useEffect(() => {
+    checkBiometricSupport();
+  }, []);
+
+  const checkBiometricSupport = async () => {
+    try {
+      const deviceInfo = await getBiometricInfo();
+      setBiometricInfo(deviceInfo.biometricSupport);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to check biometric status");
+    }
+  };
+
+  const handleRegister = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const metadata = {
+        lastLocation: "security-settings",
+        appVersion: Application.nativeApplicationVersion || "1.0.0",
+      };
+
+      // Use the package's registerPasskey function
+      const result = await registerPasskey({
+        userId,
+        metadata,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      Alert.alert(
+        "Success",
+        `${biometricInfo.authenticationType} has been successfully registered for quick sign-in`,
+        [{ text: "OK", onPress: () => onComplete?.() }]
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register passkey");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View>
+      <Text className="text-lg font-semibold">
+        Enable {biometricInfo?.authenticationType || "Biometric"} Sign-in
+      </Text>
+      <Text className="text-muted-foreground">
+        Use {biometricInfo?.authenticationType || "biometrics"} for quick and secure sign-in
+      </Text>
+
+      {error ? (
+        <View className="bg-destructive/10 p-4 rounded-md mt-4">
+          <Text className="text-destructive">{error}</Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        className="h-12 items-center justify-center rounded-md bg-primary mt-4"
+        onPress={handleRegister}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text className="text-white font-semibold">
+            Register {biometricInfo?.authenticationType || "Passkey"}
+          </Text>
+        )}
+      </Pressable>
+    </View>
+  );
+};
+```
+
+### PasskeyLoginButton Component
+
+```tsx
+import React, { useState, useEffect } from "react";
+import { Pressable, View, ActivityIndicator } from "react-native";
+import { Text } from "./ui/text";
+import { authenticateWithPasskey, getBiometricInfo, getStorageKeys } from "../lib/auth-client";
+import * as SecureStore from "expo-secure-store";
+import { router } from "expo-router";
+import { Key } from "lucide-react-native";
+
+export function PasskeyLoginButton({
+  onSuccess,
+  onError,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  useEffect(() => {
+    checkPasskeyAvailability();
+  }, []);
+
+  const checkPasskeyAvailability = async () => {
+    try {
+      // Get biometric info from the package
+      const deviceInfo = await getBiometricInfo();
+      const biometricSupport = deviceInfo.biometricSupport;
+
+      // Get the STORAGE_KEYS from the package
+      const STORAGE_KEYS = getStorageKeys();
+      const storedDeviceId = await SecureStore.getItemAsync(STORAGE_KEYS.DEVICE_ID);
+
+      // Platform-specific checks
+      let platformSupported = true;
+      if (Platform.OS === "ios") {
+        const version = parseInt(Platform.Version, 10);
+        if (version < 16) platformSupported = false;
+      } else if (Platform.OS === "android") {
+        const apiLevel = biometricSupport.platformDetails.apiLevel;
+        if (!apiLevel || apiLevel < 29) platformSupported = false;
+      }
+
+      // Only show if everything is supported and we have a registered passkey
+      setIsAvailable(
+        platformSupported && 
+        biometricSupport.isSupported && 
+        biometricSupport.isEnrolled && 
+        !!storedDeviceId
+      );
+    } catch (error) {
+      console.error("Error checking passkey availability:", error);
+      setIsAvailable(false);
+    }
+  };
+
+  const handlePasskeyAuth = async () => {
+    try {
+      setLoading(true);
+      const result = await authenticateWithPasskey();
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (onSuccess) onSuccess();
+      
+      // Navigate after authentication
+      router.replace("/dashboard");
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Don't render if not available
+  if (!isAvailable) return null;
+
+  return (
+    <Pressable
+      className="h-12 w-full items-center justify-center rounded-md border border-border"
+      onPress={handlePasskeyAuth}
+      disabled={loading}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color="#007AFF" />
+      ) : (
+        <View className="flex-row items-center">
+          <Key size={20} color="#000" />
+          <Text className="font-semibold ml-2">Sign in with Passkey</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+```
+
+## Integration With Better Auth
+
+### Configuring in a Next.js Backend
+
+Here's how to integrate with Better Auth:
+
+```typescript
+import { betterAuth } from "better-auth";
+import { passkey } from "better-auth/plugins/passkey";
+import { emailOTP, admin } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { expoPasskey } from "expo-passkey/server";
+import { db } from "./lib/db";
+
+const isDevEnvironment = process.env.NODE_ENV === "development";
+const domain = isDevEnvironment ? "localhost" : "yourdomain.com";
+
+export const auth = betterAuth({
+  appName: "Your App",
+  database: prismaAdapter(db),
+  baseURL: process.env.NEXT_PUBLIC_APP_URL,
+  trustedOrigins: [
+    "https://yourdomain.com",
+    "yourdomain://", // Deep linking scheme
+    "exp+yourdomain://", // Expo linking scheme
+    ...(isDevEnvironment ? ["http://localhost:3000"] : []),
+  ],
+  plugins: [
+    // Web passkey support
+    passkey({
+      rpID: domain,
+      rpName: "Your App",
+      origin: isDevEnvironment ? "http://localhost:3000" : "https://yourdomain.com",
+    }),
+    // Expo passkey support (biometric auth for mobile)
+    expoPasskey({
+      rpId: domain,
+      rpName: "Your App",
+      logger: {
+        enabled: true,
+        level: "debug",
+      },
+    }),
+    // Other auth plugins
+    emailOTP({
+      // Email OTP configuration
+    }),
+    admin(),
+    nextCookies(),
+  ],
+});
+```
+for more information see https://www.better-auth.com/docs/integrations/next
+
+### Setting Up Client Instance in your expo app
+
+```typescript
+// lib/auth-client.ts
+import { createAuthClient } from "better-auth/client";
+import { expoPasskeyClient } from "expo-passkey";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  plugins: [expoPasskeyClient()],
+});
+
+export const { 
+  registerPasskey, 
+  authenticateWithPasskey, 
+  listPasskeys,
+  revokePasskey,
+  getBiometricInfo,
+  isPasskeySupported,
+  checkPasskeyRegistration,
+  getStorageKeys,
+  // Other auth functions from Better Auth
+  signIn,
+  signOut,
+  signUp,
+  // ...
+} = authClient;
+```
+for more information see https://www.better-auth.com/docs/integrations/expo
+
+## Hooks and Patterns
+
+### PasskeyManager Component
+
+A complete example of a PasskeyManager component for displaying and managing passkeys:
+
+```tsx
+import React, { useState } from "react";
+import { View, FlatList, Alert, ActivityIndicator } from "react-native";
+import { Text, Card, Button } from "../ui/components";
+import { usePasskeys } from "../hooks/use-passkeys";
+import { revokePasskey, getStorageKeys } from "../lib/auth-client";
+import * as SecureStore from "expo-secure-store";
+import { queryClient } from "../lib/query-client";
+import { PasskeyRegistration } from "./passkey-registration";
+
+export function PasskeyManager({ userId }) {
+  const [revoking, setRevoking] = useState(null);
+  
+  const {
+    passkeys,
+    hasRegisteredPasskey,
+    currentDeviceHasPasskey,
+    currentDeviceId,
+    isLoading,
+    refetch,
+  } = usePasskeys(userId);
+
+  const handleRevokePasskey = async (deviceId) => {
+    Alert.alert(
+      "Remove Passkey",
+      "Are you sure you want to remove this passkey?",
+      [
+        { text: "Cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setRevoking(deviceId);
+              const result = await revokePasskey({
+                userId,
+                deviceId,
+                reason: "user_requested",
+              });
+
+              if (result.error) throw result.error;
+
+              // If this is the current device, clear the device ID
+              if (currentDeviceId === deviceId) {
+                const STORAGE_KEYS = getStorageKeys();
+                await SecureStore.deleteItemAsync(STORAGE_KEYS.DEVICE_ID);
+              }
+
+              // Update UI
+              queryClient.invalidateQueries({ queryKey: ["passkeys", userId] });
+              Alert.alert("Success", "Passkey has been removed successfully");
+            } catch (error) {
+              Alert.alert("Error", "Failed to remove passkey. Please try again.");
+            } finally {
+              setRevoking(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (isLoading) {
+    return <ActivityIndicator size="large" />;
+  }
+
+  return (
+    <View>
+      <Text className="text-xl font-bold mb-4">Passkey Authentication</Text>
+      
+      {!currentDeviceHasPasskey && (
+        <Card className="mb-4 p-4">
+          <Text className="font-semibold mb-2">Enable Passkey Authentication</Text>
+          <Text className="text-muted-foreground mb-4">
+            Set up biometric authentication for faster sign-in on this device.
+          </Text>
+          <PasskeyRegistration 
+            userId={userId} 
+            onComplete={refetch} 
+          />
+        </Card>
+      )}
+
+      {passkeys.length > 0 ? (
+        <>
+          <Text className="font-semibold mb-2">Your Registered Devices</Text>
+          <FlatList
+            data={passkeys}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              // Parse metadata
+              let metadata = {};
+              if (typeof item.metadata === "string") {
+                try {
+                  metadata = JSON.parse(item.metadata);
+                } catch (error) {
+                  console.error("Error parsing metadata:", error);
+                }
+              } else if (item.metadata && typeof item.metadata === "object") {
+                metadata = item.metadata;
+              }
+
+              const isCurrentDevice = item.deviceId === currentDeviceId;
+              
+              return (
+                <Card className="mb-2 p-4">
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text className="font-semibold">
+                      {metadata.deviceName || metadata.deviceModel || 
+                        (item.platform === "ios" ? "iOS Device" : "Android Device")}
+                    </Text>
+                    {isCurrentDevice && (
+                      <View className="bg-primary/10 px-2 py-1 rounded">
+                        <Text className="text-xs text-primary">Current Device</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View className="space-y-1 mb-3">
+                    <Text className="text-sm">
+                      Platform: {item.platform === "ios" ? "iOS" : "Android"}
+                    </Text>
+                    <Text className="text-sm">
+                      Authentication: {metadata.biometricType || "Biometric"}
+                    </Text>
+                    <Text className="text-sm">
+                      Last used: {new Date(item.lastUsed).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  
+                  {isCurrentDevice && (
+                    <Button 
+                      variant="destructive"
+                      onPress={() => handleRevokePasskey(item.deviceId)}
+                      disabled={revoking === item.deviceId}
+                    >
+                      {revoking === item.deviceId ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        "Remove This Passkey"
+                      )}
+                    </Button>
+                  )}
+                </Card>
+              );
+            }}
+          />
+        </>
+      ) : (
+        <View className="items-center justify-center p-8 bg-muted/20 rounded-lg">
+          <Text className="text-center text-muted-foreground">
+            No passkeys registered. Register a passkey to enable biometric sign-in.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 }
 ```
 
@@ -510,7 +1057,9 @@ interface StorageKeys {
 
 - **iOS Version Requirements**: Must be running iOS 16+ for passkey support
 - **Biometric Setup**: Ensure Face ID/Touch ID is configured in device settings
-- **Simulator Limitations**: Biometric authentication in simulators may be limited
+- **Simulator Limitations**: Biometric authentication in simulators requires additional setup:
+  - In the simulator, go to Features → Face ID/Touch ID → Enrolled
+  - When prompted, select "Matching Face/Fingerprint" for success testing
 - **Device ID Generation**: iOS uses vendor ID from `expo-application`
 - **Device Changes**: If a user resets Face ID/Touch ID, passkeys need re-registration
 
@@ -519,10 +1068,31 @@ interface StorageKeys {
 - **API Level**: Must be running Android 10+ (API level 29+)
 - **Biometric Hardware**: Device must have fingerprint or facial recognition hardware
 - **Configuration**: Biometric authentication must be set up in device settings
-- **Emulator Testing**: Configure fingerprint in emulator settings (AVD Manager)
+- **Emulator Testing**: Configure fingerprint in emulator settings (AVD Manager):
+  - In AVD settings, enable fingerprint
+  - Use "adb -e emu finger touch 1" command to simulate fingerprint
 - **Fragmentation**: Behavior may vary across manufacturers
 
-### General Troubleshooting
+### Common Issues
+
+1. **"Device ID not found" error**:
+   - The device doesn't have a registered passkey
+   - Solution: Register a passkey for the device first
+
+2. **"Biometric authentication failed" error**:
+   - User canceled biometric prompt or failed authentication
+   - Solution: Retry authentication or offer alternative login method
+
+3. **"Invalid credential" error**:
+   - The passkey has been revoked or doesn't exist
+   - Solution: Re-register passkey
+
+4. **"Registration failed" error**:
+   - Check if the user exists in your database
+   - Ensure rpId matches your domain
+   - Check server logs for specific errors
+
+### Diagnostic Tools
 
 1. **Device Compatibility Check**:
    ```javascript
@@ -553,6 +1123,7 @@ interface StorageKeys {
    })
    ```
 
+
 ## Security Considerations
 
 - **Device Binding**: Passkeys are bound to specific devices for security
@@ -562,6 +1133,8 @@ interface StorageKeys {
 - **Automatic Cleanup**: Enable cleanup to revoke unused passkeys periodically
 - **Multiple Devices**: Allow users to register multiple devices for convenience
 - **Fallback Authentication**: Always provide alternate authentication methods
+- **Revocation**: Users should be able to revoke passkeys from all devices
+- **Metadata Handling**: Be careful with what you store in metadata to avoid privacy concerns
 
 ## Error Handling
 
@@ -588,9 +1161,45 @@ ERROR_CODES.SERVER.AUTHENTICATION_FAILED  // Authentication failed
 ERROR_CODES.SERVER.USER_NOT_FOUND         // User not found
 ```
 
-## Bugs and known issues
-As the package is currently in beta, there may be unexpected bugs or incomplete features. Please report any issues you encounter on our [Github issues page](https://github.com/iosazee/expo-passkey/issues). Known issues include
- - Expo go limitations.
+Example error handling pattern:
+
+```typescript
+try {
+  const result = await authenticateWithPasskey();
+  if (result.error) {
+    // Handle specific error types
+    if (result.error.code === ERROR_CODES.BIOMETRIC.AUTHENTICATION_FAILED) {
+      showAuthFailedMessage();
+    } else if (result.error.code === ERROR_CODES.SERVER.INVALID_CREDENTIAL) {
+      promptReregistration();
+    } else {
+      // Generic error handling
+      showErrorMessage(result.error.message);
+    }
+    return;
+  }
+  
+  // Handle success
+  handleSuccessfulAuthentication(result.data);
+} catch (error) {
+  // Catch unexpected errors
+  console.error("Unexpected error:", error);
+  showGenericErrorMessage();
+}
+```
+
+## Bugs and Known Issues
+
+As the package is currently in beta, there may be unexpected bugs or incomplete features. Please report any issues you encounter on our [Github issues page](https://github.com/iosazee/expo-passkey/issues).
+
+Known issues include:
+
+- **Expo Go Limitations**: Due to how Expo Go manages native modules, passkey functionality requires a development build or production build
+- **Android Compatibility**: Some Android devices may not support passkeys despite meeting the API level requirements
+- **iOS Simulator**: Biometric authentication in iOS simulators may not work consistently
+- **Error Messages**: Some error messages may not be descriptive enough
+- **Storage Persistence**: On some devices, SecureStore may be cleared when app is uninstalled
+
 We appreciate your feedback and contributions to improve stability and functionality.
 
 ## License
