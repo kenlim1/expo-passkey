@@ -31,27 +31,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/cjs/index.cjs",
-      "default": "./dist/index.js"
+      "require": "./dist/cjs/index.cjs"
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.js",
-      "require": "./dist/cjs/client/index.cjs",
-      "default": "./dist/client/index.js",
-      "node": null
+      "require": "./dist/cjs/client/index.cjs"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
       "import": "./dist/server/index.js",
-      "require": "./dist/cjs/server/index.cjs",
-      "default": "./dist/server/index.js"
+      "require": "./dist/cjs/server/index.cjs"
     },
     "./types": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/types/index.js",
-      "require": "./dist/cjs/types/index.cjs",
-      "default": "./dist/types/index.js"
+      "require": "./dist/cjs/types/index.cjs"
     }
   },
   "typesVersions": {

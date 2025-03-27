@@ -1,5 +1,7 @@
 import { defineConfig } from 'tsup';
 
+
+
 export default defineConfig([
   // ESM build
   {
@@ -11,7 +13,8 @@ export default defineConfig([
     },
     format: ['esm'],
     dts: true,
-    sourcemap: true,
+    sourcemap: false,
+    minify: true,
     clean: true,
     target: 'es2020',
     outDir: 'dist',
@@ -37,7 +40,8 @@ export default defineConfig([
     },
     format: ['cjs'],
     dts: false,
-    sourcemap: true,
+    sourcemap: false,
+    minify: true,
     clean: false,
     target: 'es2020',
     outDir: 'dist/cjs',
