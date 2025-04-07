@@ -131,20 +131,25 @@ describe("Cleanup utility", () => {
     expect(result).toBeUndefined();
   });
 
-  test("should not set up interval when disableInterval is true", () => {
-    const { mockUpdateMany, setIntervalSpy, result } = setupTest({
+  test("should not run any cleanup when disableInterval is true", () => {
+    const { mockUpdateMany, setIntervalSpy, result, mockLogger } = setupTest({
       inactiveDays: 30,
       disableInterval: true,
     });
 
-    // Verify immediate cleanup was still triggered
-    expect(mockUpdateMany).toHaveBeenCalled();
+    // Verify immediate cleanup was NOT triggered
+    expect(mockUpdateMany).not.toHaveBeenCalled();
 
     // Verify interval was NOT set up
     expect(setIntervalSpy).not.toHaveBeenCalled();
 
     // Verify function returned null instead of interval handle
     expect(result).toBeNull();
+
+    // Verify debug log was called
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      "Cleanup interval disabled, skipping all cleanup operations",
+    );
   });
 
   test("should log errors if the cleanup job fails", async () => {

@@ -38,6 +38,12 @@ export const setupCleanupJob = (
   }
 
   const performCleanup = async () => {
+    // Safety check to ensure adapter is available and properly initialized
+    if (!ctx.adapter || typeof ctx.adapter.updateMany !== "function") {
+      logger.warn("Skipping cleanup: Database adapter not fully initialized");
+      return;
+    }
+
     const inactiveCutoff = new Date();
     inactiveCutoff.setDate(inactiveCutoff.getDate() - inactiveDays);
 
@@ -68,8 +74,16 @@ export const setupCleanupJob = (
     }
   };
 
-  // Always run once on startup
-  performCleanup();
+  if (disableInterval) {
+    logger.debug("Cleanup interval disabled, skipping all cleanup operations");
+    return null;
+  }
+
+  // Run initial cleanup with proper error handling
+  performCleanup().catch((err) => {
+    logger.error("Failed to run initial cleanup:", err);
+    // We intentionally don't re-throw to avoid breaking initialization
+  });
 
   // Set up interval (daily) if not disabled
   if (!disableInterval) {
