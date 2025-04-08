@@ -6,7 +6,11 @@
 import { PasskeyError } from "../../types/errors";
 import { expoPasskeyClient } from "../core";
 import { authenticateWithBiometrics } from "../utils/biometrics";
-import { clearDeviceId, getDeviceInfo } from "../utils/device";
+import {
+  getDeviceInfo,
+  isPasskeyRegistered,
+  clearPasskeyData,
+} from "../utils/device";
 import { loadExpoModules } from "../utils/modules";
 
 // Mock dependencies
@@ -70,6 +74,8 @@ describe("Client Core - Branch Coverage Tests", () => {
     // Default mock setup for iOS
     (getDeviceInfo as jest.Mock).mockResolvedValue(createDefaultDeviceInfo());
     (authenticateWithBiometrics as jest.Mock).mockResolvedValue(true);
+    // Add mock for isPasskeyRegistered to return true by default
+    (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
 
     // Setup default Platform mock
     (loadExpoModules as jest.Mock).mockReturnValue({
@@ -80,6 +86,11 @@ describe("Client Core - Branch Coverage Tests", () => {
       },
       Device: {
         platformApiLevel: undefined,
+      },
+      SecureStore: {
+        getItemAsync: jest.fn(),
+        setItemAsync: jest.fn(),
+        deleteItemAsync: jest.fn(),
       },
     });
   });
@@ -95,6 +106,11 @@ describe("Client Core - Branch Coverage Tests", () => {
         },
         Device: {
           platformApiLevel: undefined,
+        },
+        SecureStore: {
+          getItemAsync: jest.fn(),
+          setItemAsync: jest.fn(),
+          deleteItemAsync: jest.fn(),
         },
       });
 
@@ -129,6 +145,11 @@ describe("Client Core - Branch Coverage Tests", () => {
         },
         Device: {
           platformApiLevel: 33,
+        },
+        SecureStore: {
+          getItemAsync: jest.fn(),
+          setItemAsync: jest.fn(),
+          deleteItemAsync: jest.fn(),
         },
       });
 
@@ -351,8 +372,9 @@ describe("Client Core - Branch Coverage Tests", () => {
 
   describe("authenticateWithPasskey", () => {
     it("should handle various API response formats", async () => {
-      // Set up biometric success
+      // Set up biometric success and passkey registration
       (authenticateWithBiometrics as jest.Mock).mockResolvedValue(true);
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
 
       const actions = expoPasskeyClient().getActions(mockFetch);
 
@@ -403,6 +425,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should handle response.data with missing token or user fields", async () => {
+      // Ensure passkey is registered for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Test cases with invalid data structures
       const testCases = [
         { data: { token: "valid-token" } }, // Missing user
@@ -425,6 +450,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should handle response with non-object data property", async () => {
+      // Ensure passkey is registered for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Test cases with invalid data property types
       const testCases = [
         { data: "string data" },
@@ -447,6 +475,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should correctly parse response with valid token and user", async () => {
+      // Ensure passkey is registered for this test
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Good response format
       mockFetch.mockResolvedValue({
         data: {
@@ -466,6 +497,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should handle API throwing network errors", async () => {
+      // Ensure passkey is registered for this test
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Mock network failure
       mockFetch.mockRejectedValue(new Error("Network connection failed"));
 
@@ -479,6 +513,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should handle API returning errors with status codes", async () => {
+      // Ensure passkey is registered for this test
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Create an error with status code
       const apiError = new Error("Unauthorized access");
       (apiError as any).status = 401;
@@ -496,6 +533,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should pass custom deviceId and full metadata in auth request", async () => {
+      // Ensure passkey is registered for this test
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Setup successful response
       mockFetch.mockResolvedValue({
         data: {
@@ -544,6 +584,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should handle completely unexpected API response structures", async () => {
+      // Ensure passkey is registered for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Test with various unexpected response structures
       const unexpectedResponses = [
         null, // null response
@@ -567,6 +610,22 @@ describe("Client Core - Branch Coverage Tests", () => {
         expect(result.error).toBeDefined();
         expect(result.data).toBeNull();
       }
+    });
+
+    it("should return error if no registered passkey exists locally", async () => {
+      // Mock isPasskeyRegistered to return false
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(false);
+
+      const actions = expoPasskeyClient().getActions(mockFetch);
+      const result = await actions.authenticateWithPasskey();
+
+      // Should return error without making fetch call
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toBe(
+        "No registered passkey found on this device",
+      );
+      expect(result.data).toBeNull();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
@@ -665,6 +724,9 @@ describe("Client Core - Branch Coverage Tests", () => {
 
   describe("checkPasskeyRegistration", () => {
     it("should handle malformed passkeys array in response", async () => {
+      // Assume local passkey registration is true for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       // Test with responses that have passkeys in wrong format
       const testCases = [
         { data: { passkeys: { notAnArray: true } } }, // Object instead of array
@@ -686,6 +748,9 @@ describe("Client Core - Branch Coverage Tests", () => {
     });
 
     it("should check deviceId and status when determining registration", async () => {
+      // Assume local passkey registration is true for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       const actions = expoPasskeyClient().getActions(mockFetch);
       const deviceId = createDefaultDeviceInfo().deviceId;
 
@@ -720,7 +785,22 @@ describe("Client Core - Branch Coverage Tests", () => {
       expect(result.isRegistered).toBe(true);
     });
 
+    it("should return false if no local registration exists", async () => {
+      // Mock isPasskeyRegistered to return false
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(false);
+
+      const actions = expoPasskeyClient().getActions(mockFetch);
+      const result = await actions.checkPasskeyRegistration("user123");
+
+      // Should return false without making API call
+      expect(result.isRegistered).toBe(false);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
     it("should handle different passkey array formats", async () => {
+      // Assume local passkey registration is true for these tests
+      (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
       const actions = expoPasskeyClient().getActions(mockFetch);
 
       // Test case 1: API returns object without passkeys array
@@ -784,7 +864,7 @@ describe("Client Core - Branch Coverage Tests", () => {
       );
     });
 
-    it("should clear device ID from storage after revocation", async () => {
+    it("should clear passkey data from storage after revocation", async () => {
       // Mock successful revocation
       mockFetch.mockResolvedValue({
         data: {
@@ -798,11 +878,11 @@ describe("Client Core - Branch Coverage Tests", () => {
         userId: "user123",
       });
 
-      // Verify device ID was cleared
-      expect(clearDeviceId).toHaveBeenCalled();
+      // Verify passkey data was cleared
+      expect(clearPasskeyData).toHaveBeenCalled();
     });
 
-    it("should not clear device ID if API returns error", async () => {
+    it("should not clear passkey data if API returns error", async () => {
       // Mock API error
       mockFetch.mockRejectedValue(new Error("Failed to revoke"));
 
@@ -812,8 +892,8 @@ describe("Client Core - Branch Coverage Tests", () => {
         userId: "user123",
       });
 
-      // Verify device ID was NOT cleared since the operation failed
-      expect(clearDeviceId).not.toHaveBeenCalled();
+      // Verify passkey data was NOT cleared since the operation failed
+      expect(clearPasskeyData).not.toHaveBeenCalled();
     });
   });
 
@@ -1021,16 +1101,18 @@ describe("Client Core - Branch Coverage Tests", () => {
         // Case 1: No options provided
         let result = await plugin.init("https://api.example.com");
 
-        expect(result.options.headers).toBeDefined();
-        expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
+        expect(result.options?.headers).toBeDefined();
+        if (result.options?.headers) {
+          expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
+        }
 
         // Case 2: No headers in options
         result = await plugin.init("https://api.example.com", {
           method: "GET",
         });
 
-        expect(result.options.headers).toBeDefined();
-        expect(result.options.method).toBe("GET");
+        expect(result.options?.headers).toBeDefined();
+        expect(result.options?.method).toBe("GET");
 
         // Case 3: Empty headers object
         result = await plugin.init("https://api.example.com", {
@@ -1038,8 +1120,11 @@ describe("Client Core - Branch Coverage Tests", () => {
           headers: {},
         });
 
-        expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
-        expect(result.options.method).toBe("POST");
+        expect(result.options?.headers).toBeDefined();
+        if (result.options?.headers) {
+          expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
+        }
+        expect(result.options?.method).toBe("POST");
 
         // Case 4: Undefined headers
         result = await plugin.init("https://api.example.com", {
@@ -1047,8 +1132,11 @@ describe("Client Core - Branch Coverage Tests", () => {
           headers: undefined,
         });
 
-        expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
-        expect(result.options.method).toBe("PUT");
+        expect(result.options?.headers).toBeDefined();
+        if (result.options?.headers) {
+          expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
+        }
+        expect(result.options?.method).toBe("PUT");
       });
 
       it("should preserve all existing headers when adding custom headers", async () => {
@@ -1068,15 +1156,23 @@ describe("Client Core - Branch Coverage Tests", () => {
           headers: existingHeaders,
         });
 
-        // Check all original headers are preserved
-        expect(result.options.headers["Content-Type"]).toBe("application/json");
-        expect(result.options.headers["Authorization"]).toBe("Bearer token123");
-        expect(result.options.headers["Accept-Language"]).toBe("en-US");
-        expect(result.options.headers["X-Custom-Header"]).toBe("value");
+        // Check that options and headers are defined
+        expect(result.options?.headers).toBeDefined();
+        if (result.options?.headers) {
+          // Check all original headers are preserved
+          expect(result.options.headers["Content-Type"]).toBe(
+            "application/json",
+          );
+          expect(result.options.headers["Authorization"]).toBe(
+            "Bearer token123",
+          );
+          expect(result.options.headers["Accept-Language"]).toBe("en-US");
+          expect(result.options.headers["X-Custom-Header"]).toBe("value");
 
-        // And new headers are added
-        expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
-        expect(result.options.headers["X-Platform"]).toBeDefined();
+          // And new headers are added
+          expect(result.options.headers["X-Client-Type"]).toBe("expo-passkey");
+          expect(result.options.headers["X-Platform"]).toBeDefined();
+        }
       });
     });
 
@@ -1114,16 +1210,16 @@ describe("Client Core - Branch Coverage Tests", () => {
 
         for (const context of errorContexts) {
           // Clear mock calls
-          (clearDeviceId as jest.Mock).mockClear();
+          (clearPasskeyData as jest.Mock).mockClear();
 
           // Call the hook
           await plugin.hooks.onError(context as any);
 
           // Should only clear device ID for 401 errors
           if (context.response?.status === 401) {
-            expect(clearDeviceId).toHaveBeenCalled();
+            expect(clearPasskeyData).toHaveBeenCalled();
           } else {
-            expect(clearDeviceId).not.toHaveBeenCalled();
+            expect(clearPasskeyData).not.toHaveBeenCalled();
           }
         }
       });
@@ -1153,7 +1249,7 @@ describe("Client Core - Branch Coverage Tests", () => {
         await expect(plugin.hooks.onError(errorContext)).resolves.not.toThrow();
 
         // Should not clear device ID for non-401 errors
-        expect(clearDeviceId).not.toHaveBeenCalled();
+        expect(clearPasskeyData).not.toHaveBeenCalled();
       });
 
       it("should handle error contexts with non-standard status codes", async () => {
@@ -1171,7 +1267,7 @@ describe("Client Core - Branch Coverage Tests", () => {
 
         for (const testCase of testCases) {
           // Reset mocks
-          (clearDeviceId as jest.Mock).mockClear();
+          (clearPasskeyData as jest.Mock).mockClear();
 
           // Create a properly typed BetterFetchError
           class MockBetterFetchError extends Error {
@@ -1200,9 +1296,9 @@ describe("Client Core - Branch Coverage Tests", () => {
 
           // Verify behavior
           if (testCase.shouldClear) {
-            expect(clearDeviceId).toHaveBeenCalled();
+            expect(clearPasskeyData).toHaveBeenCalled();
           } else {
-            expect(clearDeviceId).not.toHaveBeenCalled();
+            expect(clearPasskeyData).not.toHaveBeenCalled();
           }
         }
       });

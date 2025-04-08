@@ -1,11 +1,21 @@
 import { ERROR_CODES, PasskeyError } from "../../types/errors";
 import { expoPasskeyClient } from "../core";
 import { authenticateWithBiometrics } from "../utils/biometrics";
-import { clearDeviceId, getDeviceInfo } from "../utils/device";
+import {
+  getDeviceInfo,
+  isPasskeyRegistered,
+  clearPasskeyData,
+} from "../utils/device";
 import { loadExpoModules } from "../utils/modules";
 
 // Mock dependencies
-jest.mock("../utils/device");
+jest.mock("../utils/device", () => ({
+  getDeviceInfo: jest.fn(),
+  clearDeviceId: jest.fn(),
+  clearPasskeyData: jest.fn(), // Add clearPasskeyData mock
+  isPasskeyRegistered: jest.fn().mockResolvedValue(true), // Default to true for auth tests
+}));
+
 jest.mock("../utils/biometrics");
 
 // Initial mock implementation with a default value
@@ -184,6 +194,9 @@ describe("Expo Passkey Client", () => {
     // Mock the device info first
     (getDeviceInfo as jest.Mock).mockResolvedValue(config.deviceInfo);
 
+    // Ensure isPasskeyRegistered returns true for authentication tests
+    (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
     // Update the loadExpoModules mock
     (loadExpoModules as jest.Mock).mockReturnValue({
       Platform: config.platform,
@@ -214,6 +227,9 @@ describe("Expo Passkey Client", () => {
     // Reset mocks
     jest.clearAllMocks();
     mockFetch.mockReset();
+
+    // Make sure isPasskeyRegistered returns true by default
+    (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
 
     // Default to iOS platform for backward compatibility
     setupPlatform("ios");
@@ -373,6 +389,9 @@ describe("Expo Passkey Client", () => {
 
         (authenticateWithBiometrics as jest.Mock).mockResolvedValue(true);
 
+        // Ensure isPasskeyRegistered returns true for authentication
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
         // Mock API response
         mockFetch.mockResolvedValue({
           data: {
@@ -427,6 +446,9 @@ describe("Expo Passkey Client", () => {
         // Reset platform configuration for each test
         setupPlatform(platform);
 
+        // Ensure isPasskeyRegistered returns true so we get to biometric check
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
         // Mock authentication failure
         (authenticateWithBiometrics as jest.Mock).mockRejectedValue(
           new PasskeyError(
@@ -448,6 +470,31 @@ describe("Expo Passkey Client", () => {
         // Verify error was returned
         expect(result.error).toBeInstanceOf(Error);
         expect(result.error?.message).toBe("Authentication failed");
+        expect(result.data).toBeNull();
+      });
+
+      test("fails authentication when no passkey is registered", async () => {
+        // Reset platform configuration for each test
+        setupPlatform(platform);
+
+        // Set isPasskeyRegistered to return false to trigger the "no passkey" error
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(false);
+
+        const { actions } = createTestPlugin();
+
+        const result = await actions.authenticateWithPasskey();
+
+        // Verify biometric authentication was NOT attempted
+        expect(authenticateWithBiometrics).not.toHaveBeenCalled();
+
+        // Verify the API call was NOT made
+        expect(mockFetch).not.toHaveBeenCalled();
+
+        // Verify error was returned
+        expect(result.error).toBeInstanceOf(Error);
+        expect(result.error?.message).toBe(
+          "No registered passkey found on this device",
+        );
         expect(result.data).toBeNull();
       });
     });
@@ -721,8 +768,8 @@ describe("Expo Passkey Client", () => {
           },
         });
 
-        // Verify device ID was cleared
-        expect(clearDeviceId).toHaveBeenCalled();
+        // Verify passkey data was cleared
+        expect(clearPasskeyData).toHaveBeenCalled();
 
         // Verify the result
         expect(result).toEqual({
@@ -761,6 +808,9 @@ describe("Expo Passkey Client", () => {
         // Get current device ID from mock
         const deviceId = platformConfigs.ios.deviceInfo.deviceId;
 
+        // Make sure isPasskeyRegistered returns true
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
         // Mock API response
         mockFetch.mockResolvedValue({
           data: {
@@ -796,7 +846,28 @@ describe("Expo Passkey Client", () => {
         });
       });
 
+      test("returns not registered when no local passkey is found", async () => {
+        // Set isPasskeyRegistered to return false for this test
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(false);
+
+        const { actions } = createTestPlugin();
+
+        const result = await actions.checkPasskeyRegistration("user123");
+
+        // Verify no API call was made since we already know it's not registered locally
+        expect(mockFetch).not.toHaveBeenCalled();
+
+        // Verify result shows not registered
+        expect(result.isRegistered).toBe(false);
+        expect(result.deviceId).toBeNull();
+        expect(result.biometricSupport).toBeNull();
+        expect(result.error).toBeNull();
+      });
+
       test("handles API errors when checking registration", async () => {
+        // Ensure isPasskeyRegistered returns true so we try server check
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
         // Make the mock fetch throw an error to trigger the catch block
         mockFetch.mockRejectedValue(new Error("User not found"));
 
@@ -829,7 +900,7 @@ describe("Expo Passkey Client", () => {
         });
 
         // Verify headers were correctly added with platform-specific values
-        expect(result.options.headers).toEqual({
+        expect(result.options?.headers).toEqual({
           "X-Custom": "Value",
           "X-Client-Type": "expo-passkey",
           "X-Client-Version": "1.0.0",
@@ -838,7 +909,7 @@ describe("Expo Passkey Client", () => {
         });
       });
 
-      test("onError hook clears device ID on 401 errors", async () => {
+      test("onError hook clears passkey data on 401 errors", async () => {
         const { plugin } = createTestPlugin();
         const fetchPlugin = plugin.fetchPlugins[0];
 
@@ -861,11 +932,11 @@ describe("Expo Passkey Client", () => {
         // Call the onError hook
         await fetchPlugin.hooks.onError(errorContext);
 
-        // Verify device ID was cleared
-        expect(clearDeviceId).toHaveBeenCalled();
+        // Verify passkey data was cleared
+        expect(clearPasskeyData).toHaveBeenCalled();
       });
 
-      test("onError hook does not clear device ID on non-401 errors", async () => {
+      test("onError hook does not clear passkey data on non-401 errors", async () => {
         const { plugin } = createTestPlugin();
         const fetchPlugin = plugin.fetchPlugins[0];
 
@@ -888,8 +959,8 @@ describe("Expo Passkey Client", () => {
         // Call the onError hook
         await fetchPlugin.hooks.onError(errorContext);
 
-        // Verify device ID was not cleared
-        expect(clearDeviceId).not.toHaveBeenCalled();
+        // Verify passkey data was not cleared
+        expect(clearPasskeyData).not.toHaveBeenCalled();
       });
     });
 
@@ -905,6 +976,32 @@ describe("Expo Passkey Client", () => {
         const isSupported = await actions.isPasskeySupported();
 
         expect(isSupported).toBe(false);
+      });
+    });
+
+    describe("hasRegisteredPasskey", () => {
+      test("returns true when a passkey is registered", async () => {
+        // Set isPasskeyRegistered to return true
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(true);
+
+        const { actions } = createTestPlugin();
+
+        const result = await actions.hasRegisteredPasskey();
+
+        expect(result).toBe(true);
+        expect(isPasskeyRegistered).toHaveBeenCalled();
+      });
+
+      test("returns false when no passkey is registered", async () => {
+        // Set isPasskeyRegistered to return false
+        (isPasskeyRegistered as jest.Mock).mockResolvedValue(false);
+
+        const { actions } = createTestPlugin();
+
+        const result = await actions.hasRegisteredPasskey();
+
+        expect(result).toBe(false);
+        expect(isPasskeyRegistered).toHaveBeenCalled();
       });
     });
   });

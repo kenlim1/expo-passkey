@@ -18,12 +18,14 @@ function getModules() {
 /**
  * Gets or generates a device identifier
  * @param options Client options with storage prefix
- * @returns Promise resolving to a device ID
+ * @param generateIfMissing If true, will generate and store a new ID if none exists
+ * @returns Promise resolving to a device ID or null if not found and generation is disabled
  * @throws {PasskeyError} If device ID generation fails
  */
 export async function getDeviceId(
   options: ExpoPasskeyClientOptions = {},
-): Promise<string> {
+  generateIfMissing: boolean = true,
+): Promise<string | null> {
   try {
     const { Platform, Application, Device, SecureStore } = getModules();
     const KEYS = getStorageKeys(options);
@@ -34,9 +36,17 @@ export async function getDeviceId(
       if (storedId) {
         return storedId;
       }
+
+      // If we don't want to generate a new ID, return null
+      if (!generateIfMissing) {
+        return null;
+      }
     } catch (storageError) {
       console.warn("Failed to retrieve stored device ID:", storageError);
-      // Continue to generate a new ID
+      // Continue to generate a new ID if allowed
+      if (!generateIfMissing) {
+        return null;
+      }
     }
 
     let deviceId: string;
@@ -140,6 +150,10 @@ export async function getDeviceId(
   } catch (error) {
     console.error("Unexpected error in getDeviceId:", error);
 
+    if (!generateIfMissing) {
+      return null;
+    }
+
     // This should never happen in production, but as a last resort:
     try {
       const randomId = await generateFallbackDeviceId();
@@ -152,6 +166,31 @@ export async function getDeviceId(
       // Ultimate fallback - simple timestamp + random
       return `fallback-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     }
+  }
+}
+
+/**
+ * Checks if a passkey is registered by looking for both device ID and user ID
+ * @param options Client options with storage prefix
+ * @returns Promise resolving to boolean indicating if a passkey is registered
+ */
+export async function isPasskeyRegistered(
+  options: ExpoPasskeyClientOptions = {},
+): Promise<boolean> {
+  try {
+    const { SecureStore } = getModules();
+    const KEYS = getStorageKeys(options);
+
+    // We need both DEVICE_ID and USER_ID to consider a passkey registered
+    const [deviceId, userId] = await Promise.all([
+      SecureStore.getItemAsync(KEYS.DEVICE_ID),
+      SecureStore.getItemAsync(KEYS.USER_ID),
+    ]);
+
+    return !!deviceId && !!userId;
+  } catch (error) {
+    console.error("Error checking if passkey is registered:", error);
+    return false;
   }
 }
 
@@ -192,19 +231,50 @@ export async function generateFallbackDeviceId(): Promise<string> {
 }
 
 /**
+ * Clears all passkey-related storage data
+ * @param options Client options with storage prefix
+ * @returns Promise resolving when all passkey data is cleared
+ */
+export async function clearPasskeyData(
+  options: ExpoPasskeyClientOptions = {},
+): Promise<void> {
+  try {
+    const { SecureStore } = getModules();
+    const KEYS = getStorageKeys(options);
+    const androidUniqueIdKey = `${options.storagePrefix || "_better-auth"}.ANDROID_UNIQUE_ID`;
+
+    // Clear all passkey-related storage
+    await Promise.allSettled([
+      SecureStore.deleteItemAsync(KEYS.DEVICE_ID),
+      SecureStore.deleteItemAsync(KEYS.USER_ID),
+      SecureStore.deleteItemAsync(KEYS.STATE),
+      SecureStore.deleteItemAsync(androidUniqueIdKey),
+    ]);
+  } catch (error) {
+    console.error("Error clearing passkey data:", error);
+  }
+}
+
+// For backward compatibility
+export const clearDeviceId = clearPasskeyData;
+
+/**
  * Gets comprehensive device information including biometric support
  * @param options Client options with storage prefix
+ * @param generateDeviceId Whether to generate a device ID if none exists
  * @returns Promise resolving to device information
  */
 export async function getDeviceInfo(
   options: ExpoPasskeyClientOptions = {},
+  generateDeviceId: boolean = true,
 ): Promise<DeviceInfo> {
   try {
     const { Platform, Device, Application } = getModules();
 
     let deviceId: string;
     try {
-      deviceId = await getDeviceId(options);
+      const id = await getDeviceId(options, generateDeviceId);
+      deviceId = id || `temp-${Date.now()}`;
     } catch (deviceIdError) {
       console.error("Failed to get device ID:", deviceIdError);
       // Fallback to timestamp-based ID as last resort
@@ -245,29 +315,5 @@ export async function getDeviceInfo(
       ERROR_CODES.ENVIRONMENT.NOT_SUPPORTED,
       "Failed to retrieve device information",
     );
-  }
-}
-
-/**
- * Clears stored device ID
- * @param options Client options with storage prefix
- * @returns Promise resolving when device ID is cleared
- */
-export async function clearDeviceId(
-  options: ExpoPasskeyClientOptions = {},
-): Promise<void> {
-  try {
-    const { SecureStore } = getModules();
-    const KEYS = getStorageKeys(options);
-    const androidUniqueIdKey = `${options.storagePrefix || "_better-auth"}.ANDROID_UNIQUE_ID`;
-
-    // Use Promise.allSettled to ensure both operations are attempted even if one fails
-    await Promise.allSettled([
-      SecureStore.deleteItemAsync(KEYS.DEVICE_ID),
-      SecureStore.deleteItemAsync(androidUniqueIdKey),
-    ]);
-  } catch (error) {
-    console.error("Error clearing device ID:", error);
-    // Don't rethrow - we want the UI to continue even if clearing fails
   }
 }

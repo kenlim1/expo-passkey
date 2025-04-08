@@ -25,8 +25,13 @@ import type {
 } from "../types";
 
 import { authenticateWithBiometrics } from "./utils/biometrics";
-import { clearDeviceId, getDeviceInfo } from "./utils/device";
+import {
+  clearPasskeyData,
+  getDeviceInfo,
+  isPasskeyRegistered,
+} from "./utils/device";
 import { loadExpoModules } from "./utils/modules";
+import { getStorageKeys } from "./utils/storage";
 
 import { ERROR_CODES, PasskeyError } from "~/types/errors";
 
@@ -45,9 +50,10 @@ class ExpoPasskeyClient {
 
   /**
    * Makes device info available to plugin actions
+   * @param generateDeviceId Whether to generate device ID if missing
    */
-  public async getDeviceInformation() {
-    return getDeviceInfo(this.options);
+  public async getDeviceInformation(generateDeviceId: boolean = true) {
+    return getDeviceInfo(this.options, generateDeviceId);
   }
 
   /**
@@ -55,6 +61,13 @@ class ExpoPasskeyClient {
    */
   public getOptions() {
     return this.options;
+  }
+
+  /**
+   * Checks if a passkey is registered for the current device
+   */
+  public async hasRegisteredPasskey(): Promise<boolean> {
+    return isPasskeyRegistered(this.options);
   }
 }
 
@@ -105,10 +118,11 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
       ): Promise<RegisterPasskeyResult> => {
         try {
           // Get modules only when function is called
-          const { Platform } = getModules();
+          const { Platform, SecureStore } = getModules();
+          const KEYS = getStorageKeys(client.getOptions());
 
-          // Get device information
-          const deviceInfo = await client.getDeviceInformation();
+          // Get device information with auto-generation enabled
+          const deviceInfo = await client.getDeviceInformation(true);
 
           // Check if biometric authentication is supported
           if (!deviceInfo.biometricSupport.isSupported) {
@@ -162,7 +176,14 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           );
 
           // Check if response was successful
-          if (response.data) {
+          if (response.data && response.data.success) {
+            // Store the user ID to mark successful registration
+            try {
+              await SecureStore.setItemAsync(KEYS.USER_ID, data.userId);
+            } catch (storageError) {
+              console.warn("Failed to save user ID:", storageError);
+              // Continue anyway since the server registration was successful
+            }
             return { data: response.data, error: null };
           }
 
@@ -189,10 +210,19 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         fetchOptions?: BetterFetchOption,
       ): Promise<AuthenticatePasskeyResult> => {
         try {
+          // First check if there's a registered passkey locally
+          const hasPasskey = await client.hasRegisteredPasskey();
+          if (!hasPasskey) {
+            throw new PasskeyError(
+              ERROR_CODES.BIOMETRIC.AUTHENTICATION_FAILED,
+              "No registered passkey found on this device",
+            );
+          }
+
           // Get modules only when function is called
           const { Platform } = getModules();
 
-          const deviceInfo = await client.getDeviceInformation();
+          const deviceInfo = await client.getDeviceInformation(false);
 
           // Check biometric support
           if (
@@ -336,7 +366,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         fetchOptions?: BetterFetchOption,
       ): Promise<RevokePasskeyResult> => {
         try {
-          const deviceInfo = await client.getDeviceInformation();
+          const deviceInfo = await client.getDeviceInformation(false);
           const clientOptions = client.getOptions();
 
           // Make request to revoke passkey
@@ -353,8 +383,8 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             },
           );
 
-          // Clear device ID from storage
-          await clearDeviceId(clientOptions);
+          // Clear all passkey data, not just device ID
+          await clearPasskeyData(clientOptions);
 
           // Check if response was successful
           if (response.data) {
@@ -381,7 +411,20 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         fetchOptions?: BetterFetchOption,
       ): Promise<PasskeyRegistrationCheckResult> => {
         try {
-          const deviceInfo = await client.getDeviceInformation();
+          // First check local storage
+          const hasLocalRegistration = await client.hasRegisteredPasskey();
+
+          // Only proceed with server check if we have local registration
+          if (!hasLocalRegistration) {
+            return {
+              isRegistered: false,
+              deviceId: null,
+              biometricSupport: null,
+              error: null,
+            };
+          }
+
+          const deviceInfo = await client.getDeviceInformation(false);
 
           const response = await $fetch<{
             passkeys: Array<{ deviceId: string; status: string }>;
@@ -428,7 +471,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           // Get modules only when function is called
           const { Platform } = getModules();
 
-          const deviceInfo = await client.getDeviceInformation();
+          const deviceInfo = await client.getDeviceInformation(false);
           const { biometricSupport } = deviceInfo;
 
           if (!biometricSupport.isSupported || !biometricSupport.isEnrolled) {
@@ -460,7 +503,14 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
        * Gets biometric information for the device
        */
       getBiometricInfo: async () => {
-        return client.getDeviceInformation();
+        return client.getDeviceInformation(false);
+      },
+
+      /**
+       * Determines if the current device has a registered passkey
+       */
+      hasRegisteredPasskey: async (): Promise<boolean> => {
+        return client.hasRegisteredPasskey();
       },
 
       /**
@@ -474,6 +524,13 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           USER_ID: `${prefix}.user_id`,
         };
       },
+
+      /**
+       * Clears all passkey-related storage data
+       */
+      clearPasskeyData: async () => {
+        return clearPasskeyData(client.getOptions());
+      },
     }),
 
     fetchPlugins: [
@@ -486,7 +543,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           onError: async (context: ErrorContext) => {
             // Check if the error is authentication related
             if (context.response?.status === 401) {
-              await clearDeviceId(client.getOptions());
+              await clearPasskeyData(client.getOptions());
             }
           },
         },

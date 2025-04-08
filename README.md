@@ -496,6 +496,22 @@ interface PasskeyRegistrationCheckResult {
 }
 ```
 
+
+####ß `isPasskeyRegistered()`
+
+Checks if the device has a valid registered passkey by verifying both device ID and user ID are present in secure storage.
+
+```typescript
+// Check if the current device has a registered passkey
+const hasPasskey = await hasRegisteredPasskey();
+if (hasPasskey) {
+  console.log("This device has a registered passkey");
+  //carry out some action eg conditionally show passkey login button
+} else {
+  console.log("No passkey registered on this device");
+}
+```
+
 #### `getBiometricInfo(): Promise<DeviceInfo>`
 
 Gets information about the device's biometric capabilities, platform, and configuration.
