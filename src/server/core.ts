@@ -114,10 +114,6 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
     },
     // Plugin initialization
     init: (ctx: AuthContext) => {
-      if (process.env.NODE_ENV !== "production") {
-        logger.info("Initializing Expo Passkey plugin...");
-      }
-
       // Set up cleanup job for inactive passkeys
       setupCleanupJob(ctx, options.cleanup, logger);
     },

@@ -497,7 +497,7 @@ interface PasskeyRegistrationCheckResult {
 ```
 
 
-####ß `isPasskeyRegistered()`
+#### `isPasskeyRegistered()`
 
 Checks if the device has a valid registered passkey by verifying both device ID and user ID are present in secure storage.
 
