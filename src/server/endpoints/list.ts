@@ -203,7 +203,6 @@ export const createListEndpoint = (options: { logger: Logger }) => {
           throw error;
         }
 
-        // Change from BAD_REQUEST (400) to INTERNAL_SERVER_ERROR (500)
         throw new APIError("INTERNAL_SERVER_ERROR", {
           code: ERROR_CODES.SERVER.PASSKEYS_RETRIEVAL_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.PASSKEYS_RETRIEVAL_FAILED],

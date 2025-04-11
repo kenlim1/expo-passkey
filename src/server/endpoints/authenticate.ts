@@ -121,19 +121,20 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
           });
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
+        const nowISOString = now.toISOString();
 
         // Update passkey metadata
         await ctx.context.adapter.update({
           model: "mobilePasskey",
           where: [{ field: "id", operator: "eq", value: credential.id }],
           update: {
-            lastUsed: now,
+            lastUsed: nowISOString,
             updatedAt: now,
             metadata: JSON.stringify({
               ...JSON.parse(credential.metadata || "{}"),
               ...metadata,
-              lastAuthenticationAt: now,
+              lastAuthenticationAt: nowISOString,
             }),
           },
         });

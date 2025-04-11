@@ -88,7 +88,8 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
           });
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
+        const nowISOString = now.toISOString();
 
         // Update the credential to revoked status
         await ctx.context.adapter.update({
@@ -96,7 +97,7 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
           where: [{ field: "id", operator: "eq", value: credential.id }],
           update: {
             status: "revoked",
-            revokedAt: now,
+            revokedAt: nowISOString,
             revokedReason: reason || "user_initiated",
             updatedAt: now,
           },

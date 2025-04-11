@@ -101,7 +101,8 @@ export const createRegisterEndpoint = (options: {
             where: [{ field: "deviceId", operator: "eq", value: deviceId }],
           });
 
-        const now = new Date().toISOString();
+        const now = new Date();
+        const lastUsed = now.toISOString();
 
         if (existingCredential) {
           // If the existing credential is already active, throw error
@@ -129,7 +130,7 @@ export const createRegisterEndpoint = (options: {
             update: {
               userId,
               platform,
-              lastUsed: now,
+              lastUsed: lastUsed,
               status: "active",
               updatedAt: now,
               revokedAt: null,
@@ -149,7 +150,7 @@ export const createRegisterEndpoint = (options: {
               userId,
               deviceId,
               platform,
-              lastUsed: now,
+              lastUsed: lastUsed,
               status: "active",
               createdAt: now,
               updatedAt: now,
