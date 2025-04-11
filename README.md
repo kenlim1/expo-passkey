@@ -20,6 +20,7 @@ A Better Auth plugin enabling secure, passwordless authentication in Expo applic
 - [Usage Examples](#usage-examples)
 - [Complete API Reference](#complete-api-reference)
 - [Database Schema](#database-schema)
+- [Database Optimizations](#database-optimizations)
 - [UI Components](#ui-components)
 - [Integration With Better Auth](#integration-with-better-auth)
 - [Hooks and Patterns](#hooks-and-patterns)
@@ -94,7 +95,32 @@ export const auth = betterAuth({
 });
 ```
 
-2. **Add to Client**:
+2. **Migrate the Database**
+
+Run the migration or generate the schema to add the necessary fields and tables to the database.
+
+<details>
+  <summary><strong>🚀 Migrate</strong></summary>
+
+  ```bash
+  npx @better-auth/cli migrate
+  ```
+
+</details>
+
+<details>
+  <summary><strong>⚙️ Generate</strong></summary>
+
+  ```bash
+  npx @better-auth/cli generate
+  ```
+
+</details>
+
+See the [Schema](#database-schema) to add the fields manually.
+
+
+3. **Add to Client**:
 ```typescript
 import { createAuthClient } from "better-auth/client";
 import { expoPasskeyClient } from "expo-passkey";
@@ -108,7 +134,8 @@ export const {
 });
 ```
 
-3. **Implement Authentication**:
+
+4. **Implement Authentication**:
 ```tsx
 function PasskeyButton() {
   const handleAuth = async () => {
@@ -597,23 +624,39 @@ interface ExpoPasskeyOptions {
 
 ## Database Schema
 
-The plugin automatically creates a `mobilePasskey` table in your database with the following schema:
+The plugin requires a new table in the database to store biometric data.
+- Table Name 📱: `mobilePasskey` 
 
-```typescript
-{
-  id: string;                  // Unique identifier
-  userId: string;              // User ID (references user.id)
-  deviceId: string;            // Device identifier
-  platform: string;            // "ios" or "android"
-  lastUsed: string;            // ISO timestamp 
-  status: "active" | "revoked"; // Status
-  createdAt: Date;             // Creation timestamp
-  updatedAt: Date;             // Last update timestamp
-  revokedAt?: string;          // Revocation timestamp (if applicable)
-  revokedReason?: string;      // Reason for revocation (if applicable)
-  metadata: string;            // JSON string of device metadata
-}
-```
+| **Field Name**   | **Type**                | **Key** | **Description**                                      |
+|------------------|--------------------------|--------|------------------------------------------------------|
+| `id`             | `string`                | PK     | Unique identifier for each mobile passkey            |
+| `userId`         | `string`                | FK     | The ID of the user (references `user.id`)            |
+| `deviceId`       | `string`                | -      | Identifier of the registered device                  |
+| `platform`       | `string` (`ios`/`android`) | -   | Platform on which the passkey was registered         |
+| `lastUsed`       | `string` (ISO timestamp) | -     | The last time the passkey was used                   |
+| `status`         | `"active"` \| `"revoked"` | -    | Current status of the passkey                        |
+| `createdAt`      | `Date`                  | -      | Time when the passkey was created                    |
+| `updatedAt`      | `Date`                  | -      | Time when the passkey was last updated               |
+| `revokedAt`      | `string` (optional)     | -      | Timestamp when the passkey was revoked (if any)      |
+| `revokedReason`  | `string` (optional)     | -      | Reason for revocation (if any)                       |
+| `metadata`       | `string` (JSON)         | -      | JSON string containing metadata about the device     |
+
+## Database Optimizations
+
+Optimizing database performance is essential to get the best out of the Expo Passkey plugin.
+
+### Recommended Fields to Index
+
+- **Single field indexes**:
+  - `userId`: For fast lookups of a user's passkeys.
+  - `lastUsed`: For efficient sorting and cleanup operations.
+  - `status`: For filtering by active/revoked status.
+
+- **Compound indexes**:
+  - `(deviceId, status)`: Optimizes the authentication endpoint.
+  - `(userId, status)`: Accelerates the passkey listing endpoint.
+  - `(lastUsed, status)`: Improves performance of cleanup operations.
+
 
 ## UI Components
 
