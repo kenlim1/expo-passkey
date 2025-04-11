@@ -90,11 +90,11 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
             defaultValue: "active",
           },
           createdAt: {
-            type: "date",
+            type: "string",
             required: true,
           },
           updatedAt: {
-            type: "date",
+            type: "string",
             required: true,
           },
           revokedAt: {

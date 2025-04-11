@@ -635,8 +635,8 @@ The plugin requires a new table in the database to store biometric data.
 | `platform`       | `string` (`ios`/`android`) | -   | Platform on which the passkey was registered         |
 | `lastUsed`       | `string` (ISO timestamp) | -     | The last time the passkey was used                   |
 | `status`         | `"active"` \| `"revoked"` | -    | Current status of the passkey                        |
-| `createdAt`      | `Date`                  | -      | Time when the passkey was created                    |
-| `updatedAt`      | `Date`                  | -      | Time when the passkey was last updated               |
+| `createdAt`      | `string`                  | -      | Time when the passkey was created                    |
+| `updatedAt`      | `string`                  | -      | Time when the passkey was last updated               |
 | `revokedAt`      | `string` (optional)     | -      | Timestamp when the passkey was revoked (if any)      |
 | `revokedReason`  | `string` (optional)     | -      | Reason for revocation (if any)                       |
 | `metadata`       | `string` (JSON)         | -      | JSON string containing metadata about the device     |
