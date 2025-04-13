@@ -20,6 +20,10 @@ import type { MobilePasskey } from "~/types";
 export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
   const { logger } = options;
 
+  // Helper function to wait a specified time
+  const wait = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
   return createAuthEndpoint(
     "/expo-passkey/authenticate",
     {
@@ -144,14 +148,40 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
           ctx.request,
         );
 
-        const sessionData = await ctx.context.internalAdapter.findSession(
+        // Try to find the session with progressive delays
+        let sessionData = null;
+        const delays = [100, 300, 500]; // Progressive backoff: 100ms, 300ms, 500ms
+
+        // First immediate attempt
+        sessionData = await ctx.context.internalAdapter.findSession(
           sessionToken.token,
         );
 
+        // If first attempt fails, try with progressive delays
+        for (let i = 0; sessionData === null && i < delays.length; i++) {
+          logger.debug(
+            `Retry attempt ${i + 1}: Session not found, waiting ${delays[i]}ms...`,
+            {
+              token: sessionToken.token,
+              userId: user.id,
+            },
+          );
+
+          // Wait for the specified delay
+          await wait(delays[i]);
+
+          // Try to retrieve the session again
+          sessionData = await ctx.context.internalAdapter.findSession(
+            sessionToken.token,
+          );
+        }
+
+        // If we still don't have session data after all retries
         if (!sessionData) {
           logger.error("Failed to find created session:", {
             token: sessionToken.token,
             userId: user.id,
+            retriesAttempted: delays.length + 1,
           });
           throw new APIError("INTERNAL_SERVER_ERROR", {
             code: "SESSION_NOT_FOUND",
