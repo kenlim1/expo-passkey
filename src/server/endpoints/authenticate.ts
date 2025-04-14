@@ -20,10 +20,6 @@ import type { MobilePasskey } from "~/types";
 export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
   const { logger } = options;
 
-  // Helper function to wait a specified time
-  const wait = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
   return createAuthEndpoint(
     "/expo-passkey/authenticate",
     {
@@ -41,18 +37,13 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
                   schema: {
                     type: "object",
                     properties: {
-                      data: {
+                      token: { type: "string" },
+                      user: {
                         type: "object",
                         properties: {
-                          token: { type: "string" },
-                          user: {
-                            type: "object",
-                            properties: {
-                              id: { type: "string" },
-                              email: { type: "string" },
-                              emailVerified: { type: "boolean" },
-                            },
-                          },
+                          id: { type: "string" },
+                          email: { type: "string" },
+                          emailVerified: { type: "boolean" },
                         },
                       },
                     },
@@ -142,58 +133,47 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
           },
         });
 
-        // Create session using internal adapter
+        // Create session token using internal adapter
+        // We pass false to prevent automatic cookie setting
         const sessionToken = await ctx.context.internalAdapter.createSession(
           user.id,
           ctx.request,
+          false,
         );
 
-        // Try to find the session with progressive delays
-        let sessionData = null;
-        const delays = [100, 300, 500]; // Progressive backoff: 100ms, 300ms, 500ms
+        // Get session configuration from context
+        const sessionConfig = ctx.context.options.session || {};
 
-        // First immediate attempt
-        sessionData = await ctx.context.internalAdapter.findSession(
-          sessionToken.token,
-        );
+        // Calculate expiration based on configured expiresIn or default to 7 days
+        const expiresInSeconds = sessionConfig.expiresIn || 7 * 24 * 60 * 60;
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
-        // If first attempt fails, try with progressive delays
-        for (let i = 0; sessionData === null && i < delays.length; i++) {
-          logger.debug(
-            `Retry attempt ${i + 1}: Session not found, waiting ${delays[i]}ms...`,
-            {
-              token: sessionToken.token,
-              userId: user.id,
-            },
-          );
-
-          // Wait for the specified delay
-          await wait(delays[i]);
-
-          // Try to retrieve the session again
-          sessionData = await ctx.context.internalAdapter.findSession(
-            sessionToken.token,
-          );
-        }
-
-        // If we still don't have session data after all retries
-        if (!sessionData) {
-          logger.error("Failed to find created session:", {
-            token: sessionToken.token,
+        // Create session data matching better-auth's expected structure
+        const sessionData = {
+          session: {
+            // Standard session properties
+            id: sessionToken.token,
             userId: user.id,
-            retriesAttempted: delays.length + 1,
-          });
-          throw new APIError("INTERNAL_SERVER_ERROR", {
-            code: "SESSION_NOT_FOUND",
-            message: "Failed to create session",
-          });
-        }
+            token: sessionToken.token,
+            expiresAt: expiresAt,
+            createdAt: new Date(),
+            updatedAt: new Date(),
 
-        // Set the session cookie with complete data
+            // Request metadata
+            ipAddress:
+              ctx.request?.headers?.get("x-forwarded-for") ||
+              ctx.request?.headers?.get("x-real-ip") ||
+              null,
+            userAgent: ctx.request?.headers?.get("user-agent") || null,
+          },
+          user: user,
+        };
+
+        // Set the session cookie with our manually constructed data
         await setSessionCookie(ctx, sessionData);
 
-        // Set session data cache if enabled
-        if (ctx.context.options.session?.cookieCache?.enabled) {
+        // Set session data cache if enabled in configuration
+        if (sessionConfig.cookieCache?.enabled) {
           await setCookieCache(ctx, sessionData);
         }
 
@@ -203,6 +183,7 @@ export const createAuthenticateEndpoint = (options: { logger: Logger }) => {
         });
 
         // Return response with proper session data
+        // This matches what better-auth would normally return
         return ctx.json({
           token: sessionToken.token,
           user: sessionData.user,

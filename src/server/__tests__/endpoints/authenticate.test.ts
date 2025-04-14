@@ -34,7 +34,15 @@ describe("authenticatePasskey endpoint", () => {
         appVersion: "1.0.0",
       },
     },
-    request: {},
+    request: {
+      headers: {
+        get: jest.fn((header) => {
+          if (header === "user-agent") return "test-user-agent";
+          if (header === "x-forwarded-for") return "127.0.0.1";
+          return null;
+        }),
+      },
+    },
     context: {
       adapter: {
         findOne: jest.fn(),
@@ -42,13 +50,13 @@ describe("authenticatePasskey endpoint", () => {
       },
       internalAdapter: {
         createSession: jest.fn(),
-        findSession: jest.fn(),
       },
       options: {
         session: {
           cookieCache: {
             enabled: true,
           },
+          expiresIn: 604800, // 7 days
         },
       },
     },
@@ -79,12 +87,6 @@ describe("authenticatePasskey endpoint", () => {
     // Mock session creation
     mockCtx.context.internalAdapter.createSession.mockResolvedValueOnce({
       token: "session-token-123",
-    });
-
-    // Mock session retrieval
-    mockCtx.context.internalAdapter.findSession.mockResolvedValueOnce({
-      token: "session-token-123",
-      user: { id: "user-123", email: "user@example.com" },
     });
 
     // Create endpoint and get handler using type assertion
@@ -119,15 +121,30 @@ describe("authenticatePasskey endpoint", () => {
       }),
     });
 
-    // Verify session creation
+    // Verify session creation - updated to expect the 'false' parameter
     expect(mockCtx.context.internalAdapter.createSession).toHaveBeenCalledWith(
       "user-123",
       mockCtx.request,
+      false,
     );
 
     // Verify session cookies were set
     expect(setSessionCookie).toHaveBeenCalled();
     expect(setCookieCache).toHaveBeenCalled();
+
+    // Verify the session data structure passed to setSessionCookie
+    const sessionDataArg = (setSessionCookie as jest.Mock).mock.calls[0][1];
+    expect(sessionDataArg).toHaveProperty("session");
+    expect(sessionDataArg).toHaveProperty("user");
+    expect(sessionDataArg.session).toHaveProperty("id", "session-token-123");
+    expect(sessionDataArg.session).toHaveProperty("token", "session-token-123");
+    expect(sessionDataArg.session).toHaveProperty("userId", "user-123");
+    expect(sessionDataArg.session).toHaveProperty("expiresAt");
+    expect(sessionDataArg.session).toHaveProperty("ipAddress", "127.0.0.1");
+    expect(sessionDataArg.session).toHaveProperty(
+      "userAgent",
+      "test-user-agent",
+    );
 
     // Verify response
     expect(mockCtx.json).toHaveBeenCalledWith({
@@ -227,13 +244,10 @@ describe("authenticatePasskey endpoint", () => {
         email: "user@example.com",
       }); // User exists
 
-    // Mock session creation success
-    mockCtx.context.internalAdapter.createSession.mockResolvedValueOnce({
-      token: "session-token-123",
-    });
-
-    // But mock session retrieval failure
-    mockCtx.context.internalAdapter.findSession.mockResolvedValueOnce(null);
+    // Mock session creation failure
+    mockCtx.context.internalAdapter.createSession.mockRejectedValueOnce(
+      new Error("Session creation failed"),
+    );
 
     // Create endpoint and get handler using type assertion
     const endpoint = createAuthenticateEndpoint(options);
@@ -250,8 +264,8 @@ describe("authenticatePasskey endpoint", () => {
 
     // Verify error was logged
     expect(mockLogger.error).toHaveBeenCalledWith(
-      "Failed to find created session:",
-      expect.any(Object),
+      "Authentication error:",
+      expect.any(Error),
     );
   });
 
