@@ -28,6 +28,7 @@ export default defineConfig([
       'better-auth',
       '@better-fetch/fetch',
       'zod',
+      'uncrypto',
     ],
   },
   // CJS build
@@ -55,6 +56,7 @@ export default defineConfig([
       'better-auth',
       '@better-fetch/fetch',
       'zod',
+      'uncrypto',
     ],
   },
 ]);
