@@ -30,13 +30,14 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "react-native": {
-        "types": "./dist/client/index.d.ts",
-        "default": "./dist/client/index.js"
-      },
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.cjs"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "require": "./dist/cjs/client/index.cjs"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
