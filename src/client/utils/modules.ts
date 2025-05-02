@@ -3,33 +3,37 @@
  * @module expo-passkey/client/utils/modules
  */
 
+import { Platform } from "react-native";
+import * as Application from "expo-application";
+import * as Device from "expo-device";
+import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
+import * as Crypto from "expo-crypto";
+
 // Interface for the loaded modules
 export interface ExpoModules {
-  Platform: typeof import("react-native").Platform;
-  Application: typeof import("expo-application");
-  Device: typeof import("expo-device");
-  LocalAuthentication: typeof import("expo-local-authentication");
-  SecureStore: typeof import("expo-secure-store");
-  Crypto: typeof import("expo-crypto");
+  Platform: typeof Platform;
+  Application: typeof Application;
+  Device: typeof Device;
+  LocalAuthentication: typeof LocalAuthentication;
+  SecureStore: typeof SecureStore;
+  Crypto: typeof Crypto;
 }
 
-/**
- * Loads all required Expo modules
- * @returns Object containing all required modules
- * @throws Error if running in a server environment
- */
+// Return all modules bundled together
 export function loadExpoModules(): ExpoModules {
   // Check if running in a server environment
   if (typeof window === "undefined" && typeof process !== "undefined") {
     throw new Error("Expo modules cannot be loaded in a server environment");
   }
 
+  // Return the statically imported modules
   return {
-    Platform: require("react-native").Platform,
-    Application: require("expo-application"),
-    Device: require("expo-device"),
-    LocalAuthentication: require("expo-local-authentication"),
-    SecureStore: require("expo-secure-store"),
-    Crypto: require("expo-crypto"),
+    Platform,
+    Application,
+    Device,
+    LocalAuthentication,
+    SecureStore,
+    Crypto,
   };
 }

@@ -11,8 +11,17 @@ import { z } from "zod";
 export interface ExpoPasskeyOptions {
   /** Relying Party Name for the passkey */
   rpName: string;
+
   /** Relying Party ID for the passkey */
   rpId: string;
+
+  /**
+   * Expected origins for WebAuthn verification
+   * For ios, this is your associated domain, for android this is the SHA-256 hash of the apk signing certificate and is in this format:
+   * android:apk-key-hash:{base64url-encoded-hash}
+   */
+  origin?: string | string[];
+
   /** Rate limiting configuration */
   rateLimit?: {
     /** Window for registration attempts in seconds */
@@ -24,6 +33,7 @@ export interface ExpoPasskeyOptions {
     /** Maximum authentication attempts per window */
     authenticateMax?: number;
   };
+
   /** Cleanup configuration for old/inactive passkeys */
   cleanup?: {
     /** Number of days after which inactive passkeys are revoked */
@@ -35,6 +45,7 @@ export interface ExpoPasskeyOptions {
      */
     disableInterval?: boolean;
   };
+
   /** Logger configuration */
   logger?: {
     enabled?: boolean;
@@ -48,16 +59,34 @@ export interface ExpoPasskeyOptions {
 export const mobilePasskeySchema = z.object({
   id: z.string(),
   userId: z.string(),
-  deviceId: z.string(),
+  credentialId: z.string(),
+  publicKey: z.string(),
+  counter: z.number().default(0),
   platform: z.string(),
   lastUsed: z.string(),
   status: z.enum(["active", "revoked"]).default("active"),
-  createdAt: z.date().default(() => new Date()),
-  updatedAt: z.date().default(() => new Date()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   revokedAt: z.string().optional(),
   revokedReason: z.string().optional(),
   metadata: z.string().optional(),
+  aaguid: z.string().optional(),
 });
 
-/** MobilePasskey model  */
+/**
+ * Database schema for the passkeyChallenge model
+ */
+export const passkeyChallengeSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  challenge: z.string(),
+  type: z.enum(["registration", "authentication"]),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+});
+
+/** MobilePasskey model type */
 export type MobilePasskey = z.infer<typeof mobilePasskeySchema>;
+
+/** PasskeyChallenge model type */
+export type PasskeyChallenge = z.infer<typeof passkeyChallengeSchema>;
