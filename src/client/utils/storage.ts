@@ -91,8 +91,6 @@ export async function storeCredentialId(
       KEYS.CREDENTIAL_IDS,
       JSON.stringify(credentials),
     );
-
-    console.debug("[ExpoPasskey] Stored credential ID:", credentialId);
   } catch (error) {
     console.error("[ExpoPasskey] Error storing credential ID:", error);
     throw error;
@@ -192,10 +190,10 @@ export async function updateCredentialLastUsed(
       JSON.stringify(credentials),
     );
 
-    console.debug(
-      "[ExpoPasskey] Updated credential last used time:",
-      credentialId,
-    );
+    // console.debug(
+    //   "[ExpoPasskey] Updated credential last used time:",
+    //   credentialId,
+    // );
   } catch (error) {
     console.error(
       "[ExpoPasskey] Error updating credential last used time:",
@@ -241,7 +239,7 @@ export async function removeCredentialId(
       JSON.stringify(credentials),
     );
 
-    console.debug("[ExpoPasskey] Removed credential ID:", credentialId);
+    // console.debug("[ExpoPasskey] Removed credential ID:", credentialId);
 
     // If there are no more credentials, also remove the user ID
     if (Object.keys(credentials).length === 0) {

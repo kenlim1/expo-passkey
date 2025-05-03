@@ -75,10 +75,6 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
     try {
       // Use the new ExpoPasskeyModule directly
       nativePasskeySupported = ExpoPasskeyModule.isPasskeySupported();
-      console.debug(
-        "[ExpoPasskey] Native passkey support check result:",
-        nativePasskeySupported,
-      );
     } catch (error) {
       console.warn(
         "[ExpoPasskey] Error checking native passkey support:",

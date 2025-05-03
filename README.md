@@ -9,6 +9,17 @@
 
 This is an Expo module as well as a Better Auth plugin to help you create and authenticate with passkeys in your Expo apps. Now in release candidate (RC) stage, it's ready for integration in production applications. 
 
+## 📱 Example Project
+
+Check out our comprehensive example implementation at [neb-starter](https://github.com/iosazee/neb-starter), which demonstrates how to use Expo Passkey across a full-stack application:
+
+- **Backend**: Built with Next.js, showcasing server-side implementation
+- **Mobile App**: Complete Expo mobile client with passkey authentication
+- **Working Demo**: See passkey registration and authentication in action
+- **Best Practices**: Demonstrates recommended implementation patterns
+
+This starter kit provides a working reference that you can use as a foundation for your own projects or to understand how all the pieces fit together.
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -222,7 +233,7 @@ See the [Schema](#database-schema) to add the models/fields manually.
 
 3. **Add to Client**:
 ```typescript
-import { createAuthClient } from "better-auth/client";
+import { createAuthClient } from "better-auth/react";
 import { expoPasskeyClient } from "expo-passkey";
 
 export const { 
@@ -234,6 +245,14 @@ export const {
 });
 ```
 
+## Looking for More?
+
+For a complete working example of Expo Passkey implementation, explore our [neb-starter](https://github.com/iosazee/neb-starter) repository, which demonstrates:
+
+- Server-side configuration in Next.js
+- Client-side integration in Expo
+- Registration and authentication flows
+- Error handling and UI integration
 
 ## Complete API Reference
 
@@ -638,3 +657,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [FIDO2 WebAuthn](https://webauthn.guide/)
 - [Apple Associated Domains](https://developer.apple.com/documentation/xcode/supporting-associated-domains)
 - [Android Asset Links](https://developers.google.com/digital-asset-links)
+- [Neb Starter Example Project](https://github.com/iosazee/neb-starter)

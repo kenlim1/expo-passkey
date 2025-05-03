@@ -316,10 +316,10 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   credentialMetadata,
                 );
 
-                console.debug(
-                  "[ExpoPasskey] Stored credential after registration:",
-                  credentialId,
-                );
+                // console.debug(
+                //   "[ExpoPasskey] Stored credential after registration:",
+                //   credentialId,
+                // );
               } catch (storageError) {
                 // Don't fail the registration if local storage fails
                 console.warn(
@@ -400,9 +400,9 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                 }));
               }
 
-              console.debug(
-                `[ExpoPasskey] Using ${allowCredentials.length} stored credentials for authentication`,
-              );
+              // console.debug(
+              //   `[ExpoPasskey] Using ${allowCredentials.length} stored credentials for authentication`,
+              // );
             } catch (storageError) {
               console.warn(
                 "[ExpoPasskey] Failed to get stored credentials:",
@@ -607,10 +607,10 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                       },
                     );
 
-                    console.debug(
-                      "[ExpoPasskey] Synced server credential to local storage:",
-                      passkey.credentialId,
-                    );
+                    // console.debug(
+                    //   "[ExpoPasskey] Synced server credential to local storage:",
+                    //   passkey.credentialId,
+                    // );
                   }
                 }
               } catch (storageError) {
@@ -675,10 +675,10 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   data.credentialId,
                   client.getOptions(),
                 );
-                console.debug(
-                  "[ExpoPasskey] Removed revoked credential from local storage:",
-                  data.credentialId,
-                );
+                // console.debug(
+                //   "[ExpoPasskey] Removed revoked credential from local storage:",
+                //   data.credentialId,
+                // );
               } catch (storageError) {
                 console.warn(
                   "[ExpoPasskey] Failed to remove credential from local storage:",
