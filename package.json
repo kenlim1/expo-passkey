@@ -57,7 +57,10 @@
     "touch-id",
     "fingerprint"
   ],
-  "repository": "https://github.com/iosazee/expo-passkey",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iosazee/expo-passkey.git"
+  },
   "bugs": {
     "url": "https://github.com/iosazee/expo-passkey/issues"
   },
