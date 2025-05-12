@@ -4,10 +4,10 @@
   <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-blue" alt="Platform iOS | Android" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
   <img src="https://img.shields.io/badge/TypeScript-Ready-blue" alt="TypeScript Ready" />
-  <img src="https://img.shields.io/badge/Status-RC-blue" alt="Release Candidate Status" />
+ <img src="https://img.shields.io/badge/Status-STABLE-brightgreen" alt="Stable Status" />
 </p>
 
-This is an Expo module as well as a Better Auth plugin to help you create and authenticate with passkeys in your Expo apps. Now in release candidate (RC) stage, it's ready for integration in production applications. 
+This is an Expo module as well as a Better Auth plugin to help you create and authenticate with passkeys in your Expo apps. Now in stable release, it's ready for production applications.
 
 ## 📱 Example Project
 
@@ -19,6 +19,19 @@ Check out our comprehensive example implementation at [neb-starter](https://gith
 - **Best Practices**: Demonstrates recommended implementation patterns
 
 This starter kit provides a working reference that you can use as a foundation for your own projects or to understand how all the pieces fit together.
+
+## 🎬 Video Demos
+
+See Expo Passkey in action on different platforms:
+
+### iOS Demo
+[![Watch the iOS Demo](https://img.shields.io/badge/Watch-iOS%20Demo%20with%20Face%20ID-blue?style=for-the-badge&logo=apple)](https://server.nubialand.com/uploads/Expo-Passkey-Demo.mp4)
+
+### Android Demo
+[![Watch the Android Demo](https://img.shields.io/badge/Watch-Android%20Demo%20with%20Fingerprint-green?style=for-the-badge&logo=android)](https://server.nubialand.com/uploads/epk-demo.mp4)
+
+*These demos show the complete passkey experience from registration to authentication using biometric verification.*
+
 
 ## 📋 Table of Contents
 
@@ -629,7 +642,7 @@ try {
 
 ## Bugs and Known Issues
 
-This package is now in release candidate (RC) stage, meaning it's considered feature-complete and stable for most production uses. However, we still encourage you to report any issues you encounter on our [Github issues page](https://github.com/iosazee/expo-passkey/issues).
+This package is now in stable release, meaning it's considered production-ready and has been thoroughly tested in real-world applications. However, we still encourage you to report any issues you encounter on our [Github issues page](https://github.com/iosazee/expo-passkey/issues).
 
 There are a few platform limitations to be aware of:
 
@@ -638,7 +651,7 @@ There are a few platform limitations to be aware of:
 - **iOS Simulator**: Biometric authentication in iOS simulators may not work consistently
 - **Storage Persistence**: On some devices, SecureStore may be cleared when app is uninstalled
 
-We appreciate your feedback as we prepare for the stable release.
+We appreciate your feedback as we continue to improve the library.
 
 ## License
 
