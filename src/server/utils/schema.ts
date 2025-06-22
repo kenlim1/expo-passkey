@@ -6,11 +6,34 @@
 import { z } from "zod";
 
 /**
+ * Schema for authenticator selection criteria
+ */
+const authenticatorSelectionSchema = z.object({
+  authenticatorAttachment: z.enum(["platform", "cross-platform"]).optional(),
+  residentKey: z.enum(["required", "preferred", "discouraged"]).optional(),
+  requireResidentKey: z.boolean().optional(),
+  userVerification: z.enum(["required", "preferred", "discouraged"]).optional(),
+});
+
+/**
+ * Schema for registration options that can be passed with challenge request
+ */
+export const registrationOptionsSchema = z.object({
+  attestation: z.enum(["none", "indirect", "direct", "enterprise"]).optional(),
+  authenticatorSelection: authenticatorSelectionSchema.optional(),
+  timeout: z.number().optional(),
+});
+
+// Export the registration options schema type for use in other files
+export type RegistrationOptions = z.infer<typeof registrationOptionsSchema>;
+
+/**
  * Schema for WebAuthn challenge requests
  */
 export const challengeSchema = z.object({
   userId: z.string(),
   type: z.enum(["registration", "authentication"]),
+  registrationOptions: registrationOptionsSchema.optional(),
 });
 
 /**

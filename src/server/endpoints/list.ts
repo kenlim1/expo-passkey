@@ -13,7 +13,7 @@ import {
   listPasskeysQuerySchema,
 } from "../utils/schema";
 
-import type { MobilePasskey } from "../../types";
+import type { AuthPasskey } from "../../types";
 
 /**
  * Create endpoint to list user passkeys
@@ -139,8 +139,8 @@ export const createListEndpoint = (options: { logger: Logger }) => {
         }
 
         // Fetch passkeys with pagination
-        const passkeys = await ctx.context.adapter.findMany<MobilePasskey>({
-          model: "mobilePasskey",
+        const passkeys = await ctx.context.adapter.findMany<AuthPasskey>({
+          model: "authPasskey",
           where: [
             { field: "userId", operator: "eq", value: userId },
             { field: "status", operator: "eq", value: "active" },

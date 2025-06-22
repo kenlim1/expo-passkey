@@ -1,5 +1,5 @@
 /**
- * @file Main entry point for expo-passkey
+ * @file Native/mobile entry point for Expo Passkey client
  * @description Client-side exports for Expo Passkey authentication
  * @module expo-passkey
  */
@@ -13,7 +13,7 @@ export * from "./ExpoPasskeyModule.types";
 
 // Client exports only
 export { ERROR_CODES, PasskeyError } from "./types/errors";
-export { expoPasskeyClient } from "./client";
+export { expoPasskeyClient } from "./client/index.native";
 
 // Re-export client-side types
 export type {

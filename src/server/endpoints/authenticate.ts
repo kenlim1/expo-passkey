@@ -18,7 +18,7 @@ import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
 import type { Logger } from "../utils/logger";
 import { authenticatePasskeySchema } from "../utils/schema";
 
-import type { MobilePasskey, PasskeyChallenge } from "../../types";
+import type { AuthPasskey, PasskeyChallenge } from "../../types";
 
 /**
  * Create WebAuthn passkey authentication endpoint
@@ -99,8 +99,8 @@ export const createAuthenticateEndpoint = (options: {
         logger.debug("WebAuthn authentication attempt:", { credentialId });
 
         // Find the credential by its ID
-        const passkey = await ctx.context.adapter.findOne<MobilePasskey>({
-          model: "mobilePasskey",
+        const passkey = await ctx.context.adapter.findOne<AuthPasskey>({
+          model: "authPasskey",
           where: [
             { field: "credentialId", operator: "eq", value: credentialId },
             { field: "status", operator: "eq", value: "active" },
@@ -220,7 +220,7 @@ export const createAuthenticateEndpoint = (options: {
 
           // Update passkey metadata and counter
           await ctx.context.adapter.update({
-            model: "mobilePasskey",
+            model: "authPasskey",
             where: [{ field: "id", operator: "eq", value: passkey.id }],
             update: {
               lastUsed: now,
@@ -245,7 +245,7 @@ export const createAuthenticateEndpoint = (options: {
           // We pass false to prevent automatic cookie setting
           const sessionToken = await ctx.context.internalAdapter.createSession(
             user.id,
-            ctx.request,
+            ctx,
             false,
           );
 

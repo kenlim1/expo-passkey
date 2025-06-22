@@ -78,8 +78,8 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
 
     // Database schema for plugin
     schema: {
-      mobilePasskey: {
-        modelName: "mobilePasskey",
+      authPasskey: {
+        modelName: "authPasskey",
         fields: {
           userId: {
             type: "string",
@@ -165,6 +165,10 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
           expiresAt: {
             type: "string",
             required: true,
+          },
+          registrationOptions: {
+            type: "string", // JSON string containing registration preferences
+            required: false,
           },
         },
       },

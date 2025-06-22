@@ -64,7 +64,7 @@ export const createChallengeEndpoint = (options: { logger: Logger }) => {
       },
     },
     async (ctx) => {
-      const { userId, type } = ctx.body;
+      const { userId, type, registrationOptions } = ctx.body;
 
       try {
         logger.debug("Generating WebAuthn challenge:", {
@@ -111,6 +111,10 @@ export const createChallengeEndpoint = (options: { logger: Logger }) => {
             type,
             createdAt: now.toISOString(),
             expiresAt: expiresAt.toISOString(),
+            // Store registration options if provided (for registration challenges)
+            registrationOptions: registrationOptions
+              ? JSON.stringify(registrationOptions)
+              : null,
           },
         });
 
