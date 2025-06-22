@@ -9,7 +9,7 @@
 
 This is a cross-platform Expo module and Better Auth plugin that brings passkey authentication to your Expo apps on **web, iOS, and Android**. Features a unified passkey table structure that works seamlessly across all platforms, making it perfect for both universal apps using react-native-web and projects with separate mobile and web frontends.
 
-> **🚀 v0.2.0-beta**: Now includes web support and unified table structure for seamless cross-platform authentication!
+> **🚀 v0.2.0-beta**: Now includes web support, unified table structure, **client-controlled WebAuthn preferences**, and enhanced cross-platform passkey syncing!
 
 ## 📱 Example Project
 
@@ -49,6 +49,7 @@ See Expo Passkey in action on different platforms:
 - [Complete API Reference](#complete-api-reference)
 - [Database Schema](#database-schema)
 - [Cross-Platform Usage](#cross-platform-usage)
+- [Client Preferences](#client-preferences)
 - [Database Optimizations](#database-optimizations)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
@@ -60,7 +61,7 @@ See Expo Passkey in action on different platforms:
 
 Expo Passkey bridges the gap between Better Auth's backend capabilities and cross-platform authentication on web, mobile, and native platforms. It allows your users to authenticate securely using Face ID, Touch ID, fingerprint recognition, or platform authenticators in web browsers, providing a modern, frictionless authentication experience.
 
-This plugin implements a comprehensive FIDO2/WebAuthn passkey solution that connects Better Auth's backend infrastructure with platform-specific authentication capabilities, offering a complete end-to-end solution that works seamlessly across web, iOS, and Android.
+This plugin implements a comprehensive FIDO2/WebAuthn passkey solution that connects Better Auth's backend infrastructure with platform-specific authentication capabilities, offering a complete end-to-end solution that works seamlessly across web, iOS, and Android with **client-controlled security preferences** and **cross-platform credential syncing**.
 
 ## Key Features
 
@@ -68,6 +69,9 @@ This plugin implements a comprehensive FIDO2/WebAuthn passkey solution that conn
 - ✅ **Unified Table Structure**: Single table works across web, mobile, and all platforms
 - ✅ **Universal App Ready**: Perfect for Expo + react-native-web projects and separate frontend architectures
 - ✅ **Platform-Specific Optimization**: Native biometrics on mobile, WebAuthn in browsers
+- ✅ **Client-Controlled Preferences**: Specify attestation, user verification, and authenticator requirements
+- ✅ **Enterprise-Ready Security**: Support for direct attestation and required user verification
+- ✅ **Cross-Platform Syncing**: Automatic support for iCloud Keychain, Google Password Manager, and hardware keys
 - ✅ **Seamless Integration**: Works directly with Better Auth server and client
 - ✅ **Complete Lifecycle Management**: Registration, authentication, and revocation flows
 - ✅ **Type-Safe API**: Comprehensive TypeScript definitions and autocomplete
@@ -309,70 +313,7 @@ export const {
 } = authClient;
 ```
 
-
-## Cross-Platform Usage
-
-
-**Mobile App Example**:
-```typescript
-// Mobile app (React Native/Expo)
-const { data, error } = await registerPasskey({
-  userId: "user123",
-  userName: "john@example.com",
-  displayName: "John Doe",
-  rpId: "example.com",
-  rpName: "My App"
-});
-
-if (data) {
-  console.log("Passkey registered on mobile!");
-}
-```
-
-**Web App Example**:
-```typescript
-// Web app (Next.js/React)
-const { data, error } = await registerPasskey({
-  userId: "user123",
-  userName: "john@example.com", 
-  displayName: "John Doe",
-  rpId: "example.com",
-  rpName: "My App"
-});
-
-if (data) {
-  console.log("Passkey registered on web!");
-}
-```
-
-
-### Platform-Specific Features
-
-You can check the current platform and access platform-specific features:
-
-```typescript
-import { Platform } from 'react-native';
-
-// Mobile-specific features
-if (Platform.OS !== 'web') {
-  const biometricInfo = await getBiometricInfo();
-  const deviceInfo = await getDeviceInfo();
-}
-
-// Web-specific features
-if (Platform.OS === 'web') {
-  const isAvailable = await isPlatformAuthenticatorAvailable();
-}
-```
-
-### Unified Passkey Management
-
-With the unified table structure, passkeys work seamlessly across platforms:
-
-- A user can register a passkey on mobile and use it with iCloud Keychain on web
-- Security keys work across all platforms  
-- The same API manages passkeys regardless of where they were created
-- Single database table handles all platform variations
+Both frontend applications use the same `expoPasskeyClient()` plugin, which automatically adapts to the platform (mobile vs web).
 
 ## Complete API Reference
 
@@ -380,7 +321,7 @@ With the unified table structure, passkeys work seamlessly across platforms:
 
 #### `registerPasskey(options): Promise<RegisterPasskeyResult>`
 
-Registers a new passkey for a user. Works across all platforms.
+Registers a new passkey for a user with full client preference control.
 
 ```typescript
 interface RegisterOptions {
@@ -389,6 +330,8 @@ interface RegisterOptions {
   displayName?: string;        // Optional: Display name (defaults to userName)
   rpId?: string;               // Optional: Relying Party ID (auto-detected on web)
   rpName?: string;             // Optional: Relying Party name
+  
+  // ✨ NEW: Client Preference Controls
   attestation?: "none" | "indirect" | "direct" | "enterprise";
   authenticatorSelection?: {   // Optional: Authenticator selection criteria
     authenticatorAttachment?: "platform" | "cross-platform";
@@ -397,6 +340,7 @@ interface RegisterOptions {
     userVerification?: "required" | "preferred" | "discouraged";
   };
   timeout?: number;            // Optional: Timeout in milliseconds
+  
   metadata?: {                 // Optional: Additional metadata to store
     deviceName?: string;       // Device name (e.g. "John's iPhone")
     deviceModel?: string;      // Device model (e.g. "iPhone 14 Pro")
@@ -471,7 +415,211 @@ if (Platform.OS === 'web') {
 
 ### Server API
 
-The server API remains the same as v0.1.x, with the key difference being the unified table structure that now supports all platforms in a single table.
+The server API remains the same as v0.1.x, with enhanced support for client preferences and cross-platform credential syncing.
+
+## Cross-Platform Usage
+
+### Separate Frontend Applications
+
+For projects with separate mobile and web frontends that share the same backend, both applications can use the `expoPasskeyClient()` plugin:
+
+**Mobile App Example**:
+```typescript
+// Mobile app (React Native/Expo)
+const { data, error } = await registerPasskey({
+  userId: "user123",
+  userName: "john@example.com",
+  displayName: "John Doe",
+  rpId: "example.com",
+  rpName: "My App"
+});
+
+if (data) {
+  console.log("Passkey registered on mobile!");
+}
+```
+
+**Web App Example**:
+```typescript
+// Web app (Next.js/React)
+const { data, error } = await registerPasskey({
+  userId: "user123",
+  userName: "john@example.com", 
+  displayName: "John Doe",
+  rpId: "example.com",
+  rpName: "My App"
+});
+
+if (data) {
+  console.log("Passkey registered on web!");
+}
+```
+
+### Cross-Platform Passkey Syncing
+
+The plugin automatically supports cross-platform credential usage:
+
+#### **iCloud Keychain Flow**
+```typescript
+// 1. User registers on iPhone (native app)
+await registerPasskey({
+  userId: "user123",
+  userName: "john@example.com",
+  authenticatorSelection: {
+    authenticatorAttachment: "platform",  // Uses Face ID/Touch ID
+    userVerification: "required"
+  }
+  // Automatically syncs to iCloud Keychain
+});
+
+// 2. User opens web app on Mac (same iCloud account)
+await authenticateWithPasskey({
+  // No userId needed - discovers credentials automatically
+  // Can access same passkey from iCloud Keychain
+});
+```
+
+#### **Hardware Key Flow**
+```typescript
+// 1. Register YubiKey on mobile
+await registerPasskey({
+  userId: "user123",
+  userName: "john@example.com",
+  authenticatorSelection: {
+    authenticatorAttachment: "cross-platform", // YubiKey/Security key
+    userVerification: "preferred"
+  }
+});
+
+// 2. Use same YubiKey on web
+await authenticateWithPasskey({
+  userId: "user123", // Optional - can discover automatically
+  // Same YubiKey works across platforms
+});
+```
+
+### Platform-Specific Features
+
+You can check the current platform and access platform-specific features:
+
+```typescript
+import { Platform } from 'react-native';
+
+// Mobile-specific features
+if (Platform.OS !== 'web') {
+  const biometricInfo = await getBiometricInfo();
+  const deviceInfo = await getDeviceInfo();
+}
+
+// Web-specific features
+if (Platform.OS === 'web') {
+  const isAvailable = await isPlatformAuthenticatorAvailable();
+}
+```
+
+### Unified Passkey Management
+
+With the unified table structure, passkeys work seamlessly across platforms:
+
+- A user can register a passkey on mobile and use it with iCloud Keychain on web
+- Security keys work across all platforms  
+- The same API manages passkeys regardless of where they were created
+- Single database table handles all platform variations
+- Enhanced metadata tracks cross-platform usage and original platform
+
+## Client Preferences
+
+### Security Level Control
+
+Control the security requirements for your passkeys:
+
+#### **High Security (Enterprise)**
+```typescript
+await registerPasskey({
+  userId: "executive123",
+  userName: "ceo@company.com",
+  displayName: "CEO",
+  
+  // High security preferences
+  attestation: "direct",        // Request device attestation for verification
+  authenticatorSelection: {
+    authenticatorAttachment: "platform",    // Require biometric authenticator
+    userVerification: "required",           // Always require biometric verification
+    residentKey: "required",               // Create discoverable credentials
+  },
+  timeout: 120000,             // 2 minutes for complex security flows
+});
+```
+
+#### **Convenient (Consumer)**
+```typescript
+await registerPasskey({
+  userId: "user123",
+  userName: "user@example.com",
+  
+  // Convenient preferences
+  attestation: "none",         // No attestation needed
+  authenticatorSelection: {
+    authenticatorAttachment: "platform",    // Prefer platform but allow cross-platform
+    userVerification: "preferred",          // Prefer but don't require
+    residentKey: "preferred",              // Prefer discoverable but allow non-discoverable
+  },
+  timeout: 60000,             // 1 minute
+});
+```
+
+#### **Cross-Platform (Hardware Keys)**
+```typescript
+await registerPasskey({
+  userId: "user123",
+  userName: "user@example.com",
+  
+  // Cross-platform preferences
+  attestation: "indirect",     // Some attestation for verification
+  authenticatorSelection: {
+    authenticatorAttachment: "cross-platform", // Allow hardware keys
+    userVerification: "required",              // Still require verification
+    residentKey: "discouraged",               // Hardware keys often don't support resident keys
+  },
+});
+```
+
+### Adaptive Security
+
+Automatically adjust security based on device capabilities:
+
+```typescript
+// Check device capabilities first
+const deviceInfo = await getDeviceInfo();
+const biometricInfo = await getBiometricInfo();
+
+// Adapt preferences based on device
+let preferences = {
+  attestation: "none" as const,
+  authenticatorSelection: {
+    authenticatorAttachment: "platform" as const,
+    userVerification: "preferred" as const,
+    residentKey: "preferred" as const,
+  }
+};
+
+// High-end devices get stricter requirements
+if (biometricInfo?.isEnrolled && deviceInfo.platform === 'ios') {
+  preferences.authenticatorSelection.userVerification = "required";
+  preferences.authenticatorSelection.residentKey = "required";
+}
+
+// Enterprise environments might require attestation
+if (process.env.EXPO_PUBLIC_ENVIRONMENT === 'enterprise') {
+  preferences.attestation = "direct";
+}
+
+await registerPasskey({
+  userId: "user123",
+  userName: "user@example.com",
+  ...preferences,
+});
+```
 
 ## Database Schema
 
@@ -493,19 +641,20 @@ The plugin uses a unified table structure that works seamlessly across all platf
 | `updatedAt`       | `string`                | -       | Time when the passkey was last updated               |
 | `revokedAt`       | `string` (optional)     | -       | Timestamp when the passkey was revoked (if any)      |
 | `revokedReason`   | `string` (optional)     | -       | Reason for revocation (if any)                       |
-| `metadata`        | `string` (JSON)         | -       | JSON string containing metadata about the device     |
+| `metadata`        | `string` (JSON)         | -       | JSON string containing metadata about the device and client preferences |
 | `aaguid`          | `string`                | -       | Authenticator Attestation Globally Unique Identifier |
 
 ### passkeyChallenge Table
 
-| **Field Name**    | **Type**                | **Key** | **Description**                                      |
-|-------------------|-------------------------|---------|------------------------------------------------------|
-| `id`              | `string`                | PK      | Unique identifier for each challenge                 |
-| `userId`          | `string`                | -       | The ID of the user                                   |
-| `challenge`       | `string`                | -       | Base64url encoded challenge                          |
-| `type`            | `string`                | -       | Type of challenge (registration/authentication)      |
-| `createdAt`       | `string`                | -       | Time when the challenge was created                  |
-| `expiresAt`       | `string`                | -       | Time when the challenge expires                      |
+| **Field Name**        | **Type**                | **Key** | **Description**                                      |
+|-----------------------|-------------------------|---------|------------------------------------------------------|
+| `id`                  | `string`                | PK      | Unique identifier for each challenge                 |
+| `userId`              | `string`                | -       | The ID of the user                                   |
+| `challenge`           | `string`                | -       | Base64url encoded challenge                          |
+| `type`                | `string`                | -       | Type of challenge (registration/authentication)      |
+| `createdAt`           | `string`                | -       | Time when the challenge was created                  |
+| `expiresAt`           | `string`                | -       | Time when the challenge expires                      |
+| `registrationOptions` | `string` (optional)     | -       | JSON string containing client registration preferences |
 
 ## Database Optimizations
 
@@ -523,6 +672,7 @@ Optimizing database performance is essential to get the best out of the Expo Pas
   - `(credentialId, status)`: Optimizes the authentication endpoint.
   - `(userId, status)`: Accelerates the passkey listing endpoint.
   - `(lastUsed, status)`: Improves performance of cleanup operations.
+  - `(userId, type)`: Improves challenge lookup performance.
 
 ## Troubleshooting
 
@@ -557,6 +707,12 @@ Optimizing database performance is essential to get the best out of the Expo Pas
 - **Import Issues**: The plugin uses platform-specific entry points to avoid importing incompatible modules
 - **Metro Bundler**: Ensure your Metro configuration supports the export conditions in package.json
 
+### Client Preference Issues
+
+- **Preference Enforcement**: If client preferences aren't being respected, check server logs for stored registration options
+- **Attestation Requirements**: Direct attestation may not be available on all devices or platforms
+- **Hardware Key Support**: Some authenticator selection criteria may not apply to hardware keys
+
 ## Migration from v0.1.x
 
 If you're upgrading from v0.1.x, you'll need to migrate your data:
@@ -564,27 +720,52 @@ If you're upgrading from v0.1.x, you'll need to migrate your data:
 ### Database Migration
 
 1. **Rename Table**: Rename `mobilePasskey` table to `authPasskey`
-2. **Update References**: Update any custom code that references the old table name
-3. **Unified Schema**: The new schema supports all platforms in a single table
+2. **Add registrationOptions Field**: Add `registrationOptions` column to `passkeyChallenge` table
+3. **Update References**: Update any custom code that references the old table name
+4. **Unified Schema**: The new schema supports all platforms in a single table
+
+```sql
+-- Migration script
+ALTER TABLE mobilePasskey RENAME TO authPasskey;
+ALTER TABLE passkeyChallenge ADD COLUMN registrationOptions TEXT NULL;
+```
 
 ### Code Changes
 
-The API remains largely the same, but imports may change:
+The API remains largely the same, but now supports client preferences:
 
 ```typescript
-// Old (v0.1.x)
-import { expoPasskeyClient } from "expo-passkey";
+// Old (v0.1.x) - basic registration
+await registerPasskey({
+  userId: "user123",
+  userName: "user@example.com",
+  rpId: "example.com",
+  rpName: "My App"
+});
 
-// New (v0.2.x) - same import, but now works on web too!
-import { expoPasskeyClient } from "expo-passkey";
+// New (v0.2.x) - with client preferences
+await registerPasskey({
+  userId: "user123",
+  userName: "user@example.com",
+  rpId: "example.com",
+  rpName: "My App",
+  // ✨ NEW: Client preferences
+  attestation: "direct",
+  authenticatorSelection: {
+    userVerification: "required",
+    residentKey: "required"
+  }
+});
 ```
 
 ## Security Considerations
 
+- **Client Preference Enforcement**: Server now enforces client-specified security requirements
 - **Cross-Platform Security**: Passkeys maintain the same security properties across platforms
 - **Domain Verification**: Ensure proper domain verification for both web and mobile
 - **Portable Passkeys**: iCloud Keychain and Google Password Manager sync passkeys securely
 - **Hardware Keys**: Support for hardware security keys across all platforms
+- **Attestation Handling**: Proper support for enterprise attestation requirements
 - **Token Security**: Use HTTPS for all API communications
 - **Rate Limiting**: Configure appropriate rate limits to prevent brute force attacks
 
@@ -593,19 +774,29 @@ import { expoPasskeyClient } from "expo-passkey";
 The package provides comprehensive error codes for all platforms:
 
 ```typescript
-// Platform-agnostic error handling
+// Platform-agnostic error handling with preference validation
 try {
-  const result = await authenticateWithPasskey();
+  const result = await registerPasskey({
+    userId: "user123",
+    userName: "user@example.com",
+    attestation: "direct",
+    authenticatorSelection: {
+      userVerification: "required"
+    }
+  });
+  
   if (result.error) {
     if (result.error.code === ERROR_CODES.WEBAUTHN.NOT_SUPPORTED) {
       showPlatformNotSupportedMessage();
     } else if (result.error.code === ERROR_CODES.BIOMETRIC.AUTHENTICATION_FAILED) {
       showAuthFailedMessage();
+    } else if (result.error.code === ERROR_CODES.SERVER.VERIFICATION_FAILED) {
+      showPreferenceValidationError();
     }
     return;
   }
   
-  handleSuccessfulAuthentication(result.data);
+  handleSuccessfulRegistration(result.data);
 } catch (error) {
   console.error("Unexpected error:", error);
 }
