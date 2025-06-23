@@ -1,21 +1,11 @@
 /**
- * Guard rail fallback for unsupported environments.
+ * Guard rail fallback - use platform-specific imports instead.
  *
- * This file is only reached if the consumer's bundler does not support
- * the 'exports' field in package.json and falls back to the 'main' entry point.
+ * 📱 React Native/Expo: import from "expo-passkey/native"
+ * 🌐 Web/Browser: import from "expo-passkey/web"
+ * 🖥️ Node.js Server: import from "expo-passkey/server"
  */
 
-throw new Error(
-  `[expo-passkey] Loaded in an unsupported environment.
-
-This library requires a bundler that supports the "exports" field in package.json.
-
-✅ To fix:
-- For React Native (Metro): This should work automatically with Expo SDK 50+.
-- For Web (Webpack 5+, Vite 3+, etc.): Ensure your bundler respects conditional exports and targets "browser".
-- For Node.js (server): Import from 'expo-passkey/server'.
-- For older bundlers: Upgrade your bundler or build tools.
-
-📘 More info: https://nodejs.org/api/packages.html#conditional-exports
-`,
-);
+// Never type prevents usage
+declare const _guard: never;
+export const expoPasskeyClient = _guard;

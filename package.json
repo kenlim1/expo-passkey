@@ -1,11 +1,9 @@
 {
   "name": "expo-passkey",
-  "version": "0.2.0-beta.3",
+  "version": "0.2.0-beta.4",
   "description": "Passkey authentication for Expo apps with Better Auth integration",
   "main": "build/index.js",
   "types": "build/index.d.ts",
-  "react-native": "build/index.native.js",
-  "browser": "build/index.web.js",
   "files": [
     "build",
     "android",
@@ -27,20 +25,21 @@
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module"
   },
- "exports": {
+"exports": {
     ".": {
-      "react-native": {
-        "types": "./build/index.native.d.ts",
-        "default": "./build/index.native.js"
-      },
-      "browser": {
-        "types": "./build/index.web.d.ts",
-        "import": "./build/index.web.js",
-        "require": "./build/index.web.js"
-      },
       "types": "./build/index.d.ts",
       "import": "./build/index.js",
       "require": "./build/index.js"
+    },
+    "./native": {
+      "types": "./build/index.native.d.ts",
+      "import": "./build/index.native.js",
+      "require": "./build/index.native.js"
+    },
+    "./web": {
+       "types": "./build/index.web.d.ts",
+      "import": "./build/index.web.js",
+      "require": "./build/index.web.js"
     },
     "./server": {
       "types": "./build/server/index.d.ts",
@@ -51,7 +50,8 @@
   "typesVersions": {
     "*": {
       "server": ["./build/server/index.d.ts"],
-      "*": ["./build/index.d.ts"]
+      "native": ["./build/index.native.d.ts"],
+      "web":["./build/index.web.d.ts"]
     }
   },
   "keywords": [
