@@ -103,6 +103,19 @@ npx expo install expo-application expo-local-authentication expo-secure-store ex
 npm install @simplewebauthn/browser
 ```
 
+**Import Strategy**:
+The package uses platform-specific entry points to prevent import conflicts:
+
+```typescript
+// ✅ Correct imports
+import { expoPasskeyClient } from "expo-passkey/native";  // Mobile
+import { expoPasskeyClient } from "expo-passkey/web";     // Web  
+import { expoPasskey } from "expo-passkey/server";        // Server
+
+// ❌ Avoid this - will show helpful error
+import { expoPasskeyClient } from "expo-passkey";         // Guard rail
+```
+
 ### Server Installation
 In your auth server:
 ```bash
@@ -266,7 +279,7 @@ See the [Schema](#database-schema) to add the models/fields manually.
 ```typescript
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
-import { expoPasskeyClient } from "expo-passkey";
+import { expoPasskeyClient } from "expo-passkey/native";
 import * as SecureStore from "expo-secure-store";
 
 export const authClient = createAuthClient({
@@ -287,6 +300,8 @@ export const authClient = createAuthClient({
 export const { 
   registerPasskey, 
   authenticateWithPasskey,
+  listPasskeys,
+  revokePasskey,
   isPasskeySupported,
   getBiometricInfo,
   getDeviceInfo
@@ -296,7 +311,7 @@ export const {
 **For Web App (Next.js/React)**:
 ```typescript
 import { createAuthClient } from "better-auth/react";
-import { expoPasskeyClient } from "expo-passkey";
+import { expoPasskeyClient } from "expo-passkey/web";
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
@@ -307,13 +322,14 @@ export const authClient = createAuthClient({
 });
 
 export const { 
+  isPlatformAuthenticatorAvailable,
   registerPasskey, 
   authenticateWithPasskey,
-  isPasskeySupported
+  listPasskeys,
+  revokePasskey,
 } = authClient;
 ```
 
-Both frontend applications use the same `expoPasskeyClient()` plugin, which automatically adapts to the platform (mobile vs web).
 
 ## Complete API Reference
 
@@ -330,8 +346,6 @@ interface RegisterOptions {
   displayName?: string;        // Optional: Display name (defaults to userName)
   rpId?: string;               // Optional: Relying Party ID (auto-detected on web)
   rpName?: string;             // Optional: Relying Party name
-  
-  // ✨ NEW: Client Preference Controls
   attestation?: "none" | "indirect" | "direct" | "enterprise";
   authenticatorSelection?: {   // Optional: Authenticator selection criteria
     authenticatorAttachment?: "platform" | "cross-platform";
@@ -349,7 +363,7 @@ interface RegisterOptions {
     manufacturer?: string;     // Device manufacturer
     brand?: string;            // Device brand
     biometricType?: string;    // Type of biometric used
-    [key: string]: any;        // Any other custom metadata
+    [key: string]: unknown;        // Any other custom metadata
   };
 }
 
@@ -377,7 +391,7 @@ interface AuthenticateOptions {
   metadata?: {                 // Optional: Additional metadata to update
     lastLocation?: string;     // Context where authentication occurred
     appVersion?: string;       // App version
-    [key: string]: any;        // Any other custom metadata
+    [key: string]: unknown;        // Any other custom metadata
   };
 }
 

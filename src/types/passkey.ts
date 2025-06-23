@@ -24,6 +24,8 @@ export interface PasskeyMetadata {
   brand?: string;
   biometricType?: string;
   lastAuthenticationAt?: string;
+  // Allow any additional custom metadata
+  [key: string]: unknown;
 }
 
 /**
