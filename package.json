@@ -1,7 +1,9 @@
 {
   "name": "expo-passkey",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "description": "Passkey authentication for Expo apps with Better Auth integration",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "files": [
     "build",
     "android",
@@ -25,16 +27,19 @@
   },
   "exports": {
     ".": {
-     "react-native": {
+      "react-native": {
         "types": "./build/index.native.d.ts",
         "import": "./build/index.native.js",
         "require": "./build/index.native.js"
       },
       "browser": {
         "types": "./build/index.web.d.ts",
-        "import": "./build/index.web.js", 
+        "import": "./build/index.web.js",
         "require": "./build/index.web.js"
-      }
+      },
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js",
+      "require": "./build/index.js"
     },
     "./server": {
       "types": "./build/server/index.d.ts",
@@ -44,9 +49,8 @@
   },
   "typesVersions": {
     "*": {
-      "server": [
-        "./build/server/index.d.ts"
-      ]
+      "server": ["./build/server/index.d.ts"],
+      "*": ["./build/index.d.ts"]
     }
   },
   "keywords": [
@@ -115,48 +119,20 @@
     "zod": ">=3.0.0"
   },
   "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-native": {
-      "optional": true
-    },
-    "expo": {
-      "optional": true
-    },
-    "expo-application": {
-      "optional": true
-    },
-    "expo-crypto": {
-      "optional": true
-    },
-    "expo-device": {
-      "optional": true
-    },
-    "expo-local-authentication": {
-      "optional": true
-    },
-    "expo-secure-store": {
-      "optional": true
-    },
-    "@better-auth/expo": {
-      "optional": true
-    },
-    "@better-fetch/fetch": {
-      "optional": true
-    },
-    "better-auth": {
-      "optional": true
-    },
-    "@simplewebauthn/server": {
-      "optional": true
-    },
-     "@simplewebauthn/browser": {
-      "optional": true
-    },
-    "zod": {
-      "optional": true
-    }
+    "react": { "optional": true },
+    "react-native": { "optional": true },
+    "expo": { "optional": true },
+    "expo-application": { "optional": true },
+    "expo-crypto": { "optional": true },
+    "expo-device": { "optional": true },
+    "expo-local-authentication": { "optional": true },
+    "expo-secure-store": { "optional": true },
+    "@better-auth/expo": { "optional": true },
+    "@better-fetch/fetch": { "optional": true },
+    "better-auth": { "optional": true },
+    "@simplewebauthn/server": { "optional": true },
+    "@simplewebauthn/browser": { "optional": true },
+    "zod": { "optional": true }
   },
   "publishConfig": {
     "access": "public",
