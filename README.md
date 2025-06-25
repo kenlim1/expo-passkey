@@ -4,12 +4,12 @@
   <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-blue" alt="Platform iOS | Android | Web" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
   <img src="https://img.shields.io/badge/TypeScript-Ready-blue" alt="TypeScript Ready" />
-  <img src="https://img.shields.io/badge/Status-BETA-orange" alt="Beta Status" />
+  <img src="https://img.shields.io/badge/Status-STABLE-brightgreen" alt="Stable Status" />
 </p>
 
 This is a cross-platform Expo module and Better Auth plugin that brings passkey authentication to your Expo apps on **web, iOS, and Android**. Features a unified passkey table structure that works seamlessly across all platforms, making it perfect for both universal apps using react-native-web and projects with separate mobile and web frontends.
 
-> **🚀 v0.2.0-beta**: Now includes web support, unified table structure, **client-controlled WebAuthn preferences**, and enhanced cross-platform passkey syncing!
+> **🚀 v0.2.0**: Now includes web support, unified table structure, **client-controlled WebAuthn preferences**, and enhanced cross-platform passkey syncing!
 
 ## 📱 Example Project
 
@@ -33,7 +33,10 @@ See Expo Passkey in action on different platforms:
 ### Android Demo
 [![Watch the Android Demo](https://img.shields.io/badge/Watch-Android%20Demo%20with%20Fingerprint-green?style=for-the-badge&logo=android)](https://server.nubialand.com/uploads/epk-demo.mp4)
 
-*These demos show the complete passkey experience from registration to authentication using biometric verification.*
+### Cross-Platform Portability Demo
+[![Watch the Cross-Platform Demo](https://img.shields.io/badge/Watch-Cross%20Platform%20Portability%20Demo-purple?style=for-the-badge&logo=webauthn)](https://server.nubialand.com/uploads/ios_web.mp4)
+
+*These demos show the complete passkey experience from registration to authentication using biometric verification, including cross-platform passkey portability.*
 
 ## 📋 Table of Contents
 
@@ -94,7 +97,7 @@ This plugin implements a comprehensive FIDO2/WebAuthn passkey solution that conn
 In your Expo app:
 ```bash
 # Install the package
-npm i expo-passkey@beta
+npm i expo-passkey
 
 # Install peer dependencies (if not already installed)
 npx expo install expo-application expo-local-authentication expo-secure-store expo-crypto expo-device
@@ -120,7 +123,7 @@ import { expoPasskeyClient } from "expo-passkey";         // Guard rail
 In your auth server:
 ```bash
 # Install the package
-npm i expo-passkey@beta
+npm i expo-passkey
 
 # Install peer dependencies (if not already installed)
 npm install better-auth better-fetch @simplewebauthn/server zod
