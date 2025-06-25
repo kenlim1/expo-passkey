@@ -83,7 +83,7 @@ describe("listPasskeys endpoint", () => {
 
     // Verify database query
     expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [
         { field: "userId", operator: "eq", value: "user-123" },
         { field: "status", operator: "eq", value: "active" },
@@ -146,7 +146,7 @@ describe("listPasskeys endpoint", () => {
 
     // Verify database query
     expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [
         { field: "userId", operator: "eq", value: "user-123" },
         { field: "status", operator: "eq", value: "active" },

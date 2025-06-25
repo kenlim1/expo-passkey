@@ -1,6 +1,6 @@
 /**
  * @file Register passkey endpoint
- * @description WebAuthn-based implementation for passkey registration
+ * @description WebAuthn-based implementation for passkey registration with client preferences support
  */
 
 import { createAuthEndpoint } from "better-auth/api";
@@ -15,7 +15,21 @@ import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
 import type { Logger } from "../utils/logger";
 import { registerPasskeySchema } from "../utils/schema";
-import type { MobilePasskey, PasskeyChallenge } from "../../types/server";
+import type { AuthPasskey, PasskeyChallenge } from "../../types/server";
+
+/**
+ * Registration options interface for type safety
+ */
+interface StoredRegistrationOptions {
+  attestation?: "none" | "indirect" | "direct" | "enterprise";
+  authenticatorSelection?: {
+    authenticatorAttachment?: "platform" | "cross-platform";
+    residentKey?: "required" | "preferred" | "discouraged";
+    requireResidentKey?: boolean;
+    userVerification?: "required" | "preferred" | "discouraged";
+  };
+  timeout?: number;
+}
 
 /**
  * Create WebAuthn passkey registration endpoint
@@ -139,18 +153,55 @@ export const createRegisterEndpoint = (options: {
           });
         }
 
+        // Parse stored registration options from the challenge
+        let registrationOptions: StoredRegistrationOptions = {};
+        if (storedChallenge.registrationOptions) {
+          try {
+            registrationOptions = JSON.parse(
+              storedChallenge.registrationOptions,
+            );
+            logger.debug(
+              "Using stored registration options:",
+              registrationOptions,
+            );
+          } catch (parseError) {
+            logger.warn(
+              "Failed to parse stored registration options, using defaults:",
+              parseError,
+            );
+            // Continue with defaults
+          }
+        }
+
+        // Determine user verification requirement from client preferences
+        const userVerificationRequirement =
+          registrationOptions.authenticatorSelection?.userVerification ||
+          "preferred";
+
+        const requireUserVerification =
+          userVerificationRequirement === "required";
+
+        logger.debug("Registration verification settings:", {
+          userVerificationRequirement,
+          requireUserVerification,
+          attestation: registrationOptions.attestation || "none",
+          authenticatorAttachment:
+            registrationOptions.authenticatorSelection?.authenticatorAttachment,
+          residentKey: registrationOptions.authenticatorSelection?.residentKey,
+        });
+
         // Prepare credential for verification
         const verifiableCredential =
           credential as unknown as RegistrationResponseJSON;
 
         try {
-          // Create verification options
+          // Create verification options with client preferences
           const verificationOptions: VerifyRegistrationResponseOpts = {
             response: verifiableCredential,
             expectedChallenge: storedChallenge.challenge,
             expectedOrigin: expectedOrigins,
             expectedRPID: rpId,
-            requireUserVerification: true,
+            requireUserVerification, // Use client preference
           };
 
           // Verify the registration response
@@ -184,8 +235,8 @@ export const createRegisterEndpoint = (options: {
 
           // Check if credential already exists
           const existingCredentials =
-            await ctx.context.adapter.findMany<MobilePasskey>({
-              model: "mobilePasskey",
+            await ctx.context.adapter.findMany<AuthPasskey>({
+              model: "authPasskey",
               where: [
                 {
                   field: "credentialId",
@@ -200,6 +251,29 @@ export const createRegisterEndpoint = (options: {
             existingCredentials.length > 0 ? existingCredentials[0] : null;
 
           const now = new Date().toISOString();
+
+          // Prepare enhanced metadata with client preferences
+          const enhancedMetadata = {
+            ...metadata,
+            // Add information about client preferences used during registration
+            registrationPreferences: {
+              attestation: registrationOptions.attestation || "none",
+              userVerification: userVerificationRequirement,
+              authenticatorAttachment:
+                registrationOptions.authenticatorSelection
+                  ?.authenticatorAttachment,
+              residentKey:
+                registrationOptions.authenticatorSelection?.residentKey,
+              requireResidentKey:
+                registrationOptions.authenticatorSelection?.requireResidentKey,
+            },
+            registeredAt: now,
+            verificationSettings: {
+              requireUserVerification,
+              expectedOrigins: expectedOrigins,
+              rpId,
+            },
+          };
 
           if (existingCredential) {
             // If the existing credential is already active, throw error
@@ -217,10 +291,11 @@ export const createRegisterEndpoint = (options: {
             logger.info("Reactivating previously revoked passkey", {
               credentialId: credentialIdStr,
               previousStatus: existingCredential.status,
+              clientPreferences: registrationOptions,
             });
 
             await ctx.context.adapter.update({
-              model: "mobilePasskey",
+              model: "authPasskey",
               where: [
                 { field: "id", operator: "eq", value: existingCredential.id },
               ],
@@ -235,16 +310,16 @@ export const createRegisterEndpoint = (options: {
                 aaguid: aaguidStr,
                 revokedAt: null,
                 revokedReason: null,
-                metadata: metadata ? JSON.stringify(metadata) : "{}",
+                metadata: JSON.stringify(enhancedMetadata),
               },
             });
           } else {
             // Create new passkey record if one doesn't exist
             await ctx.context.adapter.create({
-              model: "mobilePasskey",
+              model: "authPasskey",
               data: {
                 id: ctx.context.generateId({
-                  model: "mobilePasskey",
+                  model: "authPasskey",
                   size: 32,
                 }),
                 userId,
@@ -257,7 +332,7 @@ export const createRegisterEndpoint = (options: {
                 status: "active",
                 createdAt: now,
                 updatedAt: now,
-                metadata: metadata ? JSON.stringify(metadata) : "{}",
+                metadata: JSON.stringify(enhancedMetadata),
               },
             });
           }
@@ -273,6 +348,13 @@ export const createRegisterEndpoint = (options: {
             credentialId: credentialIdStr,
             platform,
             isUpdate: !!existingCredential,
+            clientPreferences: {
+              userVerification: userVerificationRequirement,
+              attestation: registrationOptions.attestation || "none",
+              authenticatorAttachment:
+                registrationOptions.authenticatorSelection
+                  ?.authenticatorAttachment,
+            },
           });
 
           return ctx.json({
@@ -281,12 +363,17 @@ export const createRegisterEndpoint = (options: {
             rpId,
           });
         } catch (verificationError) {
-          logger.error("WebAuthn verification failed:", verificationError);
+          logger.error("WebAuthn verification failed:", {
+            error: verificationError,
+            userId,
+            credentialId: credential.id,
+            clientPreferences: registrationOptions,
+          });
           throw new APIError("BAD_REQUEST", {
             code: "VERIFICATION_FAILED",
             message:
               verificationError instanceof Error
-                ? verificationError.message
+                ? `WebAuthn verification failed: ${verificationError.message}`
                 : "WebAuthn verification failed",
           });
         }

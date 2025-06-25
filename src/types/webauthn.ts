@@ -18,6 +18,14 @@ export type AttestationConveyancePreference =
   | "enterprise";
 
 /**
+ * WebAUTHN CBOR Object Signing and Encryption Algorithm Identifier
+ */
+
+export type COSEAlgorithmIdentifier = number;
+
+export type PublicKeyCredentialType = "public-key";
+
+/**
  * WebAuthn user verification requirement
  */
 export type UserVerificationRequirement =

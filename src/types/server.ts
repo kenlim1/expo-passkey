@@ -54,9 +54,9 @@ export interface ExpoPasskeyOptions {
 }
 
 /**
- * Database schema for the mobilePasskey model
+ * Database schema for the authPasskey model
  */
-export const mobilePasskeySchema = z.object({
+export const authPasskeySchema = z.object({
   id: z.string(),
   userId: z.string(),
   credentialId: z.string(),
@@ -83,10 +83,11 @@ export const passkeyChallengeSchema = z.object({
   type: z.enum(["registration", "authentication"]),
   createdAt: z.string(),
   expiresAt: z.string(),
+  registrationOptions: z.string().optional(), // JSON string containing client registration preferences
 });
 
-/** MobilePasskey model type */
-export type MobilePasskey = z.infer<typeof mobilePasskeySchema>;
+/** AuthPasskey model type */
+export type AuthPasskey = z.infer<typeof authPasskeySchema>;
 
 /** PasskeyChallenge model type */
 export type PasskeyChallenge = z.infer<typeof passkeyChallengeSchema>;

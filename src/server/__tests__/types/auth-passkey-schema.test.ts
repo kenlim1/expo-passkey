@@ -1,12 +1,12 @@
 /**
- * @file Tests for the mobilePasskey schema
- * @description Tests specifically for the Mobile Passkey DB model
+ * @file Tests for the authPasskey schema
+ * @description Tests specifically for the Auth Passkey DB model
  */
 
-import { mobilePasskeySchema } from "../../../types";
+import { authPasskeySchema } from "../../../types";
 
-describe("MobilePasskey Schema Tests", () => {
-  describe("mobilePasskeySchema validation", () => {
+describe("AuthPasskey Schema Tests", () => {
+  describe("authPasskeySchema validation", () => {
     // Test the default value for status
     it("should apply default value 'active' for status when missing", () => {
       const passkey = {
@@ -22,7 +22,7 @@ describe("MobilePasskey Schema Tests", () => {
         updatedAt: new Date().toISOString(),
       };
 
-      const result = mobilePasskeySchema.safeParse(passkey);
+      const result = authPasskeySchema.safeParse(passkey);
       expect(result.success).toBe(true);
 
       if (result.success) {
@@ -44,7 +44,7 @@ describe("MobilePasskey Schema Tests", () => {
         lastUsed: "2023-01-01T00:00:00Z",
       };
 
-      const result1 = mobilePasskeySchema.safeParse(missingUserId);
+      const result1 = authPasskeySchema.safeParse(missingUserId);
       expect(result1.success).toBe(false);
 
       // Missing credentialId
@@ -58,7 +58,7 @@ describe("MobilePasskey Schema Tests", () => {
         lastUsed: "2023-01-01T00:00:00Z",
       };
 
-      const result2 = mobilePasskeySchema.safeParse(missingCredentialId);
+      const result2 = authPasskeySchema.safeParse(missingCredentialId);
       expect(result2.success).toBe(false);
 
       // Missing publicKey
@@ -72,7 +72,7 @@ describe("MobilePasskey Schema Tests", () => {
         lastUsed: "2023-01-01T00:00:00Z",
       };
 
-      const result3 = mobilePasskeySchema.safeParse(missingPublicKey);
+      const result3 = authPasskeySchema.safeParse(missingPublicKey);
       expect(result3.success).toBe(false);
     });
   });

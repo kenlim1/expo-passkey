@@ -37,7 +37,7 @@ jest.mock("../native-module", () => ({
   }),
 }));
 
-import { expoPasskeyClient } from "../core";
+import { expoPasskeyClient } from "../core.native";
 import { getDeviceInfo, hasPasskeysRegistered } from "../utils/device";
 import { loadExpoModules } from "../utils/modules";
 

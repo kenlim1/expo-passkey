@@ -5,7 +5,7 @@
 
 import type { AuthenticationType } from "expo-local-authentication";
 
-import type { MobilePasskey } from "./server";
+import type { AuthPasskey } from "./server";
 
 /**
  * Platform type for passkey registration
@@ -24,6 +24,8 @@ export interface PasskeyMetadata {
   brand?: string;
   biometricType?: string;
   lastAuthenticationAt?: string;
+  // Allow any additional custom metadata
+  [key: string]: unknown;
 }
 
 /**
@@ -61,7 +63,7 @@ export interface DeviceInfo {
  * Passkey state used for managing passkeys in UI applications
  */
 export interface PasskeyState {
-  passkeys: MobilePasskey[];
+  passkeys: AuthPasskey[];
   loading: boolean;
   error: string | null;
   isSupported: boolean;

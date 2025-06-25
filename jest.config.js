@@ -1,5 +1,4 @@
 export default {
-  preset: 'ts-jest/presets/default-esm',  // Use ts-jest with ESM for expo modules
   testEnvironment: 'node',
   moduleDirectories: ['node_modules', '<rootDir>/src'],
   moduleNameMapper: {
@@ -9,13 +8,12 @@ export default {
     {
       displayName: 'root',
       testMatch: ['<rootDir>/src/__tests__/**/*.test.ts'],
-      preset: 'jest-expo',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/src/client/__tests__/jest.client.setup.js'],
       transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
       },
-      transformIgnorePatterns: [
-        'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo|@expo-google-fonts|react-navigation|@react-navigation|native-base|unimodules|sentry-expo|react-native-svg|expo-modules-core)',
-      ],
       coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/types\\.ts$'],
     },
     {
@@ -24,14 +22,12 @@ export default {
         '<rootDir>/src/client/**/__tests__/**/*.test.ts',
         '<rootDir>/src/utils/**/__tests__/**/*.test.ts',
       ],
-      preset: 'jest-expo',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/src/client/__tests__/jest.client.setup.js'],
       transform: {
         '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
       },
-      transformIgnorePatterns: [
-        'node_modules/(?!(jest-)?react-native|@react-native|expo(nent)?|@expo|@expo-google-fonts|react-navigation|@react-navigation|native-base|unimodules|sentry-expo|react-native-svg|expo-modules-core)',
-      ],
       coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/', '/types\\.ts$'],
     },
     {
@@ -55,5 +51,4 @@ export default {
   coverageProvider: "v8",
   cache: false,
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  watchPlugins: ['jest-watch-typeahead/filename', 'jest-watch-typeahead/testname'],
 };

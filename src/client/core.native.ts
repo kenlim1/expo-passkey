@@ -132,6 +132,16 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         data: {
           userId: string;
           type: "registration" | "authentication";
+          registrationOptions?: {
+            attestation?: "none" | "indirect" | "direct" | "enterprise";
+            authenticatorSelection?: {
+              authenticatorAttachment?: "platform" | "cross-platform";
+              residentKey?: "required" | "preferred" | "discouraged";
+              requireResidentKey?: boolean;
+              userVerification?: "required" | "preferred" | "discouraged";
+            };
+            timeout?: number;
+          };
         },
         fetchOptions?: BetterFetchOption,
       ): Promise<ChallengeResult> => {
@@ -143,6 +153,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
               body: {
                 userId: data.userId,
                 type: data.type,
+                registrationOptions: data.registrationOptions,
               },
               ...fetchOptions,
             });
@@ -215,10 +226,18 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
               );
             }
 
+            // Prepare registration options to send to server
+            const registrationOptions = {
+              attestation: data.attestation,
+              authenticatorSelection: data.authenticatorSelection,
+              timeout: data.timeout || client.getOptions().timeout,
+            };
+
             // Get challenge from server
             const challengeResult = await getChallenge({
               userId: data.userId,
               type: "registration",
+              registrationOptions,
             });
 
             if (!challengeResult.data) {
@@ -248,7 +267,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             }
 
             // Prepare registration options
-            const registrationOptions = createRegistrationOptions(
+            const webAuthnOptions = createRegistrationOptions(
               challengeResult.data.challenge,
               data.userId,
               data.userName,
@@ -268,7 +287,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
 
             // Invoke native module to create passkey
             const credential = await createNativePasskey({
-              requestJson: JSON.stringify(registrationOptions),
+              requestJson: JSON.stringify(webAuthnOptions),
             });
 
             // Make API request to register passkey
@@ -545,23 +564,27 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             }
 
             // Make request to list passkeys
-            const { data: listData, error: listError } =
-              await $fetch<ListPasskeysSuccessResponse>(
-                `/expo-passkey/list/${data.userId}`,
-                {
-                  method: "GET",
-                  credentials: "include",
-                  headers: {
-                    Accept: "application/json",
-                    ...fetchOptions?.headers,
-                  },
-                  query: {
-                    limit: data.limit?.toString(),
-                    offset: data.offset?.toString(),
-                  },
-                  ...fetchOptions,
+            const response = await $fetch<ListPasskeysSuccessResponse>(
+              `/expo-passkey/list/${data.userId}`,
+              {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                  accept: "application/json",
+                  ...(fetchOptions?.headers as Record<string, string>),
                 },
-              );
+                query: {
+                  limit: data.limit?.toString(),
+                  offset: data.offset?.toString(),
+                },
+                ...fetchOptions,
+              },
+            );
+
+            const { data: listData, error: listError } = response as {
+              data: ListPasskeysSuccessResponse | null;
+              error: any;
+            };
 
             // Check if response was successful
             if (listData) {
@@ -725,103 +748,69 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
               };
             }
 
-            // First check local credential storage
-            let localCredentialIds: string[] = [];
-            try {
-              localCredentialIds = await getUserCredentialIds(
-                userId,
-                client.getOptions(),
-              );
-
-              // If we have local credentials, we can return immediately without server check
-              if (localCredentialIds.length > 0) {
-                return {
-                  isRegistered: true,
-                  credentialIds: localCredentialIds,
-                  biometricSupport,
-                  error: null,
-                };
-              }
-            } catch (storageError) {
-              console.warn(
-                "[ExpoPasskey] Failed to check local credentials:",
-                storageError,
-              );
-              // Continue with server check
-            }
-
-            // If no local credentials found, check with server
+            // Check server first for cross-platform sync
             const { data: passkeysData, error: passkeysError } =
               await $fetch<ListPasskeysSuccessResponse>(
                 `/expo-passkey/list/${userId}`,
                 {
                   method: "GET",
                   credentials: "include",
-                  query: {
-                    limit: "50", // Fetch up to 50 credentials to search through
-                  },
+                  query: { limit: "50" },
                   ...fetchOptions,
                 },
               );
 
             if (!passkeysData?.passkeys) {
-              throw passkeysError
-                ? new Error(
-                    passkeysError.message ||
-                      `Failed to retrieve passkey list: ${passkeysError.statusText}`,
-                  )
-                : new Error("Failed to retrieve passkey list");
+              throw (
+                passkeysError || new Error("Failed to retrieve passkey list")
+              );
             }
 
             const passkeys = passkeysData.passkeys;
-            const credentialIds = passkeys.map(
-              (pk: { credentialId: string }) => pk.credentialId,
-            );
+            const credentialIds = passkeys.map((pk) => pk.credentialId);
+            const deviceInfo = await client.getDeviceInformation();
 
-            // Store any server-side credentials we didn't have locally
-            if (credentialIds.length > 0) {
-              try {
-                for (const cred of passkeys) {
-                  if (!localCredentialIds.includes(cred.credentialId)) {
-                    // Try to parse metadata
-                    let metadata: Record<string, string> = {};
-                    if (typeof cred.metadata === "string") {
-                      try {
-                        metadata = JSON.parse(cred.metadata);
-                      } catch (_e) {
-                        // Ignore parsing errors
-                      }
-                    } else if (
-                      cred.metadata &&
-                      typeof cred.metadata === "object"
-                    ) {
-                      metadata = cred.metadata as Record<string, string>;
-                    }
-
-                    // Store the credential locally
-                    await storeCredentialId(
-                      cred.credentialId,
-                      userId,
-                      client.getOptions(),
-                      {
-                        deviceName:
-                          metadata.deviceName ||
-                          metadata.deviceModel ||
-                          undefined,
-                        displayName: metadata.displayName || userId,
-                        lastUsedAt: cred.lastUsed,
-                        registeredAt: cred.createdAt,
-                      },
-                    );
+            // Sync ALL server credentials to local storage
+            // This ensures cross-platform passkeys are locally available
+            try {
+              for (const passkey of passkeys) {
+                let metadata: Record<string, string> = {};
+                if (typeof passkey.metadata === "string") {
+                  try {
+                    metadata = JSON.parse(passkey.metadata);
+                  } catch (_e) {
+                    // Ignore parsing errors
                   }
+                } else if (
+                  passkey.metadata &&
+                  typeof passkey.metadata === "object"
+                ) {
+                  metadata = passkey.metadata as Record<string, string>;
                 }
-              } catch (storageError) {
-                console.warn(
-                  "[ExpoPasskey] Failed to store server credentials locally:",
-                  storageError,
+
+                // Store credential locally (will update if exists)
+                await storeCredentialId(
+                  passkey.credentialId,
+                  userId,
+                  client.getOptions(),
+                  {
+                    deviceName:
+                      metadata.deviceName || metadata.deviceModel || undefined,
+                    displayName: metadata.displayName || userId,
+                    lastUsedAt: passkey.lastUsed,
+                    registeredAt: passkey.createdAt,
+                    // Mark as cross-platform if not created on this platform
+                    crossPlatform: passkey.platform !== deviceInfo.platform,
+                    originalPlatform: passkey.platform,
+                  },
                 );
-                // Continue anyway
               }
+            } catch (storageError) {
+              console.warn(
+                "[ExpoPasskey] Failed to sync server credentials locally:",
+                storageError,
+              );
+              // Continue anyway - server credentials still work
             }
 
             return {
@@ -934,9 +923,11 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   headers[key] = value;
                 });
               } else if (Array.isArray(options.headers)) {
-                options.headers.forEach(([key, value]: [string, string]) => {
-                  headers[key] = value;
-                });
+                (options.headers as Array<[string, string]>).forEach(
+                  ([key, value]) => {
+                    headers[key] = value;
+                  },
+                );
               } else if (typeof options.headers === "object") {
                 Object.assign(headers, options.headers);
               }

@@ -1,6 +1,53 @@
+// Add Buffer polyfill for Node.js environment using CommonJS syntax
+const { Buffer } = require("buffer");
+
+if (typeof global.Buffer === "undefined") {
+  global.Buffer = Buffer;
+}
+
+// Setup basic DOM globals if needed for base64 operations
+if (typeof global.btoa === "undefined") {
+  global.btoa = (str) => Buffer.from(str, "binary").toString("base64");
+}
+
+if (typeof global.atob === "undefined") {
+  global.atob = (str) => Buffer.from(str, "base64").toString("binary");
+}
+
 jest.mock("expo-modules-core", () => ({
   requireOptionalNativeModule: jest.fn().mockImplementation(() => ({
     isPasskeySupported: jest.fn().mockResolvedValue(true),
+    createPasskey: jest.fn().mockResolvedValue(
+      JSON.stringify({
+        id: "test-credential-id",
+        rawId: "test-raw-id",
+        type: "public-key",
+        response: {
+          clientDataJSON: "test-client-data",
+          attestationObject: "test-attestation",
+          publicKey: "test-public-key",
+          transports: ["internal"],
+        },
+        authenticatorAttachment: "platform",
+      }),
+    ),
+    authenticateWithPasskey: jest.fn().mockResolvedValue(
+      JSON.stringify({
+        id: "test-credential-id",
+        rawId: "test-raw-id",
+        type: "public-key",
+        response: {
+          clientDataJSON: "test-client-data",
+          authenticatorData: "test-auth-data",
+          signature: "test-signature",
+          userHandle: "test-user-handle",
+        },
+        authenticatorAttachment: "platform",
+      }),
+    ),
+  })),
+  requireNativeModule: jest.fn().mockImplementation(() => ({
+    isPasskeySupported: jest.fn().mockReturnValue(true),
     createPasskey: jest.fn().mockResolvedValue(
       JSON.stringify({
         id: "test-credential-id",
@@ -147,6 +194,38 @@ jest.mock("../native-module", () => ({
   }),
 }));
 
+// Mock @simplewebauthn/browser for when other modules import it
+// but use virtual: true so specific tests can override
+jest.mock(
+  "@simplewebauthn/browser",
+  () => ({
+    browserSupportsWebAuthn: jest.fn().mockReturnValue(false),
+    startRegistration: jest.fn(),
+    startAuthentication: jest.fn(),
+  }),
+  { virtual: true },
+);
+
+// Setup minimal window and navigator for general compatibility
+// Individual tests can override these as needed
+if (typeof global.window === "undefined") {
+  global.window = {
+    location: {
+      hostname: "localhost",
+      protocol: "https:",
+    },
+    PublicKeyCredential: undefined,
+  };
+}
+
+if (typeof global.navigator === "undefined") {
+  global.navigator = {
+    userAgent: "Mozilla/5.0 (test)",
+    platform: "test",
+    credentials: undefined,
+  };
+}
+
 // Set up default mock implementations for common needs
 // Using an IIFE instead of beforeEach since this is a setup file
 (() => {
@@ -175,9 +254,9 @@ jest.mock("../native-module", () => ({
 (() => {
   jest.spyOn(console, "error").mockImplementation(() => {});
   jest.spyOn(console, "warn").mockImplementation(() => {});
-  
+
   // Add a cleanup handler to Node's process to restore mocks on exit
-  process.on('beforeExit', () => {
+  process.on("beforeExit", () => {
     jest.restoreAllMocks();
   });
 })();

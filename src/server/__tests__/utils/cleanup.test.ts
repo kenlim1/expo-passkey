@@ -61,7 +61,7 @@ describe("Cleanup utility", () => {
 
     // Verify immediate cleanup was triggered with correct params
     expect(mockUpdateMany).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [
         {
           field: "lastUsed",

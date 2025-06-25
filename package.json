@@ -1,6 +1,6 @@
 {
   "name": "expo-passkey",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Passkey authentication for Expo apps with Better Auth integration",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -25,11 +25,21 @@
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module"
   },
-  "exports": {
+"exports": {
     ".": {
       "types": "./build/index.d.ts",
       "import": "./build/index.js",
       "require": "./build/index.js"
+    },
+    "./native": {
+      "types": "./build/index.native.d.ts",
+      "import": "./build/index.native.js",
+      "require": "./build/index.native.js"
+    },
+    "./web": {
+       "types": "./build/index.web.d.ts",
+      "import": "./build/index.web.js",
+      "require": "./build/index.web.js"
     },
     "./server": {
       "types": "./build/server/index.d.ts",
@@ -39,9 +49,9 @@
   },
   "typesVersions": {
     "*": {
-      "server": [
-        "./build/server/index.d.ts"
-      ]
+      "server": ["./build/server/index.d.ts"],
+      "native": ["./build/index.native.d.ts"],
+      "web":["./build/index.web.d.ts"]
     }
   },
   "keywords": [
@@ -68,30 +78,31 @@
   "license": "MIT",
   "homepage": "https://github.com/iosazee/expo-passkey#readme",
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
+    "@jest/globals": "^30.0.0",
     "@simplewebauthn/server": "^13.1.1",
     "@simplewebauthn/types": ">=12.0.0",
+    "@simplewebauthn/browser": "^13.1.0",
     "@testing-library/react-native": "^13.2.0",
-    "@types/jest": "^29.5.14",
-    "@types/node": "^22.15.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.3",
     "@types/react": "~18.3.12",
-    "better-auth": "^1.2.7",
+    "better-auth": "^1.2.9",
     "better-call": "^1.0.9",
-    "expo": "~52.0.0",
-    "expo-application": "^6.0.2",
-    "expo-crypto": "^14.0.2",
-    "expo-device": "^7.0.3",
-    "expo-local-authentication": "^15.0.2",
-    "expo-module-scripts": "^4.0.4",
-    "expo-modules-core": "2.2.3",
-    "expo-secure-store": "^14.0.1",
-    "jest": "^29.7.0",
-    "jest-expo": "^52.0.6",
+    "expo": "~53.0.11",
+    "expo-application": "^6.1.4",
+    "expo-crypto": "^14.1.5",
+    "expo-device": "^7.1.4",
+    "expo-local-authentication": "^16.0.4",
+    "expo-module-scripts": "^4.1.7",
+    "expo-modules-core": "2.4.0",
+    "expo-secure-store": "^14.2.3",
+    "jest": "^30.0.0",
+    "jest-expo": "^53.0.7",
     "react-native": "0.76.0",
     "react-test-renderer": "^18.3.1",
     "ts-jest": "^29.3.2",
     "typescript": "^5.0.0",
-    "zod": "^3.24.3"
+    "zod": "^3.25.0"
   },
   "peerDependencies": {
     "@better-auth/expo": ">=1.0.0",
@@ -109,45 +120,20 @@
     "zod": ">=3.0.0"
   },
   "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-native": {
-      "optional": true
-    },
-    "expo": {
-      "optional": true
-    },
-    "expo-application": {
-      "optional": true
-    },
-    "expo-crypto": {
-      "optional": true
-    },
-    "expo-device": {
-      "optional": true
-    },
-    "expo-local-authentication": {
-      "optional": true
-    },
-    "expo-secure-store": {
-      "optional": true
-    },
-    "@better-auth/expo": {
-      "optional": true
-    },
-    "@better-fetch/fetch": {
-      "optional": true
-    },
-    "better-auth": {
-      "optional": true
-    },
-    "@simplewebauthn/server": {
-      "optional": true
-    },
-    "zod": {
-      "optional": true
-    }
+    "react": { "optional": true },
+    "react-native": { "optional": true },
+    "expo": { "optional": true },
+    "expo-application": { "optional": true },
+    "expo-crypto": { "optional": true },
+    "expo-device": { "optional": true },
+    "expo-local-authentication": { "optional": true },
+    "expo-secure-store": { "optional": true },
+    "@better-auth/expo": { "optional": true },
+    "@better-fetch/fetch": { "optional": true },
+    "better-auth": { "optional": true },
+    "@simplewebauthn/server": { "optional": true },
+    "@simplewebauthn/browser": { "optional": true },
+    "zod": { "optional": true }
   },
   "publishConfig": {
     "access": "public",

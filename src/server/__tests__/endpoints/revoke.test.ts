@@ -57,7 +57,7 @@ describe("revokePasskey endpoint", () => {
 
     // Verify credential lookup
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [
         { field: "credentialId", operator: "eq", value: "device-123" },
         { field: "userId", operator: "eq", value: "user-123" },
@@ -67,7 +67,7 @@ describe("revokePasskey endpoint", () => {
 
     // Verify update was performed
     expect(mockCtx.context.adapter.update).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [{ field: "id", operator: "eq", value: "passkey-123" }],
       update: expect.objectContaining({
         status: "revoked",
@@ -135,7 +135,7 @@ describe("revokePasskey endpoint", () => {
 
     // Verify lookup was attempted
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
-      model: "mobilePasskey",
+      model: "authPasskey",
       where: [
         { field: "credentialId", operator: "eq", value: "device-123" },
         { field: "userId", operator: "eq", value: "user-123" },

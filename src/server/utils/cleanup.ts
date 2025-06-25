@@ -49,7 +49,7 @@ export const setupCleanupJob = (
 
     try {
       const result = await ctx.adapter.updateMany({
-        model: "mobilePasskey",
+        model: "authPasskey",
         where: [
           {
             field: "lastUsed",

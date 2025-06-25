@@ -1,5 +1,5 @@
 import type { AuthContext, BetterAuthPlugin } from "better-auth/types";
-import { ERROR_CODES, type MobilePasskey } from "../../types";
+import { ERROR_CODES, type AuthPasskey } from "../../types";
 import { expoPasskey } from "../core";
 import { createLogger, createRateLimits, setupCleanupJob } from "../utils";
 
@@ -132,7 +132,7 @@ describe("expoPasskey server plugin", () => {
     expect(plugin).toBeDefined();
     expect(plugin.id).toBe("expo-passkey");
     expect(plugin.schema).toBeDefined();
-    expect(plugin.schema.mobilePasskey).toBeDefined();
+    expect(plugin.schema.authPasskey).toBeDefined();
     expect(plugin.endpoints).toBeDefined();
     expect(plugin.endpoints.passkeyChallenges).toBeDefined();
     expect(plugin.endpoints.registerPasskey).toBeDefined();
@@ -182,18 +182,18 @@ describe("expoPasskey server plugin", () => {
     );
   });
 
-  it("should define proper mobilePasskey schema", () => {
+  it("should define proper authPasskey schema", () => {
     const plugin = expoPasskey(validOptions) as BetterAuthPlugin & {
       schema: NonNullable<BetterAuthPlugin["schema"]>;
     };
-    const schema = plugin.schema.mobilePasskey;
+    const schema = plugin.schema.authPasskey;
 
     // Check that model name is correct
-    expect(schema.modelName).toBe("mobilePasskey");
+    expect(schema.modelName).toBe("authPasskey");
 
-    // Get field keys from MobilePasskey type, excluding the 'id' which is auto-generated
-    type MobilePasskeySchemaFields = Omit<MobilePasskey, "id">;
-    const expectedFields: Array<keyof MobilePasskeySchemaFields | string> = [
+    // Get field keys from AuthPasskey type, excluding the 'id' which is auto-generated
+    type AuthPasskeySchemaFields = Omit<AuthPasskey, "id">;
+    const expectedFields: Array<keyof AuthPasskeySchemaFields | string> = [
       "userId",
       "credentialId",
       "publicKey",
