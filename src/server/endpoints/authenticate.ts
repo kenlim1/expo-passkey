@@ -18,7 +18,11 @@ import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
 import type { Logger } from "../utils/logger";
 import { authenticatePasskeySchema } from "../utils/schema";
 
-import type { AuthPasskey, PasskeyChallenge } from "../../types";
+import type {
+  AuthPasskey,
+  PasskeyChallenge,
+  ResolvedSchemaConfig,
+} from "../../types";
 
 /**
  * Create WebAuthn passkey authentication endpoint
@@ -27,8 +31,9 @@ export const createAuthenticateEndpoint = (options: {
   logger: Logger;
   rpId: string;
   origin?: string | string[];
+  schemaConfig: ResolvedSchemaConfig;
 }) => {
-  const { logger, rpId, origin } = options;
+  const { logger, rpId, origin, schemaConfig } = options;
 
   // Convert to array of origins for consistency, or use empty array if undefined
   const expectedOrigins = origin
@@ -100,7 +105,7 @@ export const createAuthenticateEndpoint = (options: {
 
         // Find the credential by its ID
         const passkey = await ctx.context.adapter.findOne<AuthPasskey>({
-          model: "authPasskey",
+          model: schemaConfig.authPasskeyModel,
           where: [
             { field: "credentialId", operator: "eq", value: credentialId },
             { field: "status", operator: "eq", value: "active" },
@@ -120,7 +125,7 @@ export const createAuthenticateEndpoint = (options: {
         // Get the latest challenge for this user
         const userChallenges =
           await ctx.context.adapter.findMany<PasskeyChallenge>({
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [
               { field: "userId", operator: "eq", value: passkey.userId },
               { field: "type", operator: "eq", value: "authentication" },
@@ -131,7 +136,7 @@ export const createAuthenticateEndpoint = (options: {
 
         const autoDiscoveryChallenges =
           await ctx.context.adapter.findMany<PasskeyChallenge>({
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [
               { field: "userId", operator: "eq", value: "auto-discovery" },
               { field: "type", operator: "eq", value: "authentication" },
@@ -220,7 +225,7 @@ export const createAuthenticateEndpoint = (options: {
 
           // Update passkey metadata and counter
           await ctx.context.adapter.update({
-            model: "authPasskey",
+            model: schemaConfig.authPasskeyModel,
             where: [{ field: "id", operator: "eq", value: passkey.id }],
             update: {
               lastUsed: now,
@@ -237,7 +242,7 @@ export const createAuthenticateEndpoint = (options: {
 
           // Delete the used challenge
           await ctx.context.adapter.delete({
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [{ field: "id", operator: "eq", value: storedChallenge.id }],
           });
 

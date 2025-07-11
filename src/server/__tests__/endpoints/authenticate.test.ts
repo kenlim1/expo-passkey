@@ -1,6 +1,7 @@
 import { APIError } from "better-call";
 
 import { createAuthenticateEndpoint } from "../../../server/endpoints/authenticate";
+import type { ResolvedSchemaConfig } from "../../../types/server";
 
 // Mock dependencies
 jest.mock("better-auth/cookies", () => ({
@@ -16,6 +17,12 @@ const mockLogger = {
   error: jest.fn(),
 };
 
+// Default schema config
+const defaultSchemaConfig: ResolvedSchemaConfig = {
+  authPasskeyModel: "authPasskey",
+  passkeyChallengeModel: "passkeyChallenge",
+};
+
 type EndpointHandler = (ctx: any) => Promise<any>;
 
 describe("authenticatePasskey endpoint", () => {
@@ -24,6 +31,7 @@ describe("authenticatePasskey endpoint", () => {
     logger: mockLogger,
     rpId: "example.com", // Add required rpId property
     origin: ["https://example.com", "example://"], // Add required origin property
+    schemaConfig: defaultSchemaConfig, // Add required schemaConfig
   };
 
   // Mock request context
@@ -110,5 +118,38 @@ describe("authenticatePasskey endpoint", () => {
       "Authentication error:",
       expect.any(Error),
     );
+  });
+
+  it("should use custom schema config model names", async () => {
+    const customSchemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "customPasskeyTable",
+      passkeyChallengeModel: "customChallengeTable",
+    };
+
+    const customOptions = {
+      ...options,
+      schemaConfig: customSchemaConfig,
+    };
+
+    // Mock database error to see which model name is used
+    mockCtx.context.adapter.findOne.mockRejectedValueOnce(
+      new Error("Database connection error"),
+    );
+
+    // Create endpoint with custom schema config
+    const endpoint = createAuthenticateEndpoint(customOptions);
+    const handler = (endpoint as any).handler as EndpointHandler;
+
+    // Call handler and expect it to throw
+    await expect(handler(mockCtx as any)).rejects.toThrow(APIError);
+
+    // Verify findOne was called with custom model name
+    expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
+      model: "customPasskeyTable",
+      where: [
+        { field: "credentialId", operator: "eq", value: "test-credential-id" },
+        { field: "status", operator: "eq", value: "active" },
+      ],
+    });
   });
 });

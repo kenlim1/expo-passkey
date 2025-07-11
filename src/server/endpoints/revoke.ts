@@ -10,13 +10,16 @@ import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
 import type { Logger } from "../utils/logger";
 import { revokePasskeySchema } from "../utils/schema";
 
-import type { AuthPasskey } from "../../types";
+import type { AuthPasskey, ResolvedSchemaConfig } from "../../types";
 
 /**
  * Create endpoint to revoke a passkey
  */
-export const createRevokeEndpoint = (options: { logger: Logger }) => {
-  const { logger } = options;
+export const createRevokeEndpoint = (options: {
+  logger: Logger;
+  schemaConfig: ResolvedSchemaConfig;
+}) => {
+  const { logger, schemaConfig } = options;
 
   return createAuthEndpoint(
     "/expo-passkey/revoke",
@@ -72,7 +75,7 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
 
         // Find the active credential for the provided credential ID and user ID
         const credential = await ctx.context.adapter.findOne<AuthPasskey>({
-          model: "authPasskey",
+          model: schemaConfig.authPasskeyModel,
           where: [
             { field: "credentialId", operator: "eq", value: credentialId },
             { field: "userId", operator: "eq", value: userId },
@@ -92,7 +95,7 @@ export const createRevokeEndpoint = (options: { logger: Logger }) => {
 
         // Update the credential to revoked status
         await ctx.context.adapter.update({
-          model: "authPasskey",
+          model: schemaConfig.authPasskeyModel,
           where: [{ field: "id", operator: "eq", value: credential.id }],
           update: {
             status: "revoked",

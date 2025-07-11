@@ -13,13 +13,16 @@ import {
   listPasskeysQuerySchema,
 } from "../utils/schema";
 
-import type { AuthPasskey } from "../../types";
+import type { AuthPasskey, ResolvedSchemaConfig } from "../../types";
 
 /**
  * Create endpoint to list user passkeys
  */
-export const createListEndpoint = (options: { logger: Logger }) => {
-  const { logger } = options;
+export const createListEndpoint = (options: {
+  logger: Logger;
+  schemaConfig: ResolvedSchemaConfig;
+}) => {
+  const { logger, schemaConfig } = options;
 
   return createAuthEndpoint(
     "/expo-passkey/list/:userId",
@@ -140,7 +143,7 @@ export const createListEndpoint = (options: { logger: Logger }) => {
 
         // Fetch passkeys with pagination
         const passkeys = await ctx.context.adapter.findMany<AuthPasskey>({
-          model: "authPasskey",
+          model: schemaConfig.authPasskeyModel,
           where: [
             { field: "userId", operator: "eq", value: userId },
             { field: "status", operator: "eq", value: "active" },

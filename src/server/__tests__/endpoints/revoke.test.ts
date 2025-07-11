@@ -1,6 +1,7 @@
 import { APIError } from "better-call";
 
 import { createRevokeEndpoint } from "../../../server/endpoints/revoke";
+import type { ResolvedSchemaConfig } from "../../../types/server";
 
 // Mock logger
 const mockLogger = {
@@ -10,19 +11,26 @@ const mockLogger = {
   error: jest.fn(),
 };
 
+// Default schema config
+const defaultSchemaConfig: ResolvedSchemaConfig = {
+  authPasskeyModel: "authPasskey",
+  passkeyChallengeModel: "passkeyChallenge",
+};
+
 type EndpointHandler = (ctx: any) => Promise<any>;
 
 describe("revokePasskey endpoint", () => {
   // Setup options for the endpoint
   const options = {
     logger: mockLogger,
+    schemaConfig: defaultSchemaConfig,
   };
 
   // Mock request context
   const mockCtx = {
     body: {
       userId: "user-123",
-      credentialId: "device-123",
+      credentialId: "credential-123",
       reason: "lost_device",
     },
     context: {
@@ -43,7 +51,7 @@ describe("revokePasskey endpoint", () => {
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
       id: "passkey-123",
       userId: "user-123",
-      deviceId: "device-123",
+      credentialId: "credential-123",
       platform: "ios",
       status: "active",
     });
@@ -55,17 +63,17 @@ describe("revokePasskey endpoint", () => {
     // Call the handler
     await handler(mockCtx as any);
 
-    // Verify credential lookup
+    // Verify credential lookup uses default model name
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
       model: "authPasskey",
       where: [
-        { field: "credentialId", operator: "eq", value: "device-123" },
+        { field: "credentialId", operator: "eq", value: "credential-123" },
         { field: "userId", operator: "eq", value: "user-123" },
         { field: "status", operator: "eq", value: "active" },
       ],
     });
 
-    // Verify update was performed
+    // Verify update was performed with default model name
     expect(mockCtx.context.adapter.update).toHaveBeenCalledWith({
       model: "authPasskey",
       where: [{ field: "id", operator: "eq", value: "passkey-123" }],
@@ -85,12 +93,60 @@ describe("revokePasskey endpoint", () => {
     );
   });
 
+  it("should use custom schema config model names", async () => {
+    const customSchemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "customPasskeyTable",
+      passkeyChallengeModel: "customChallengeTable",
+    };
+
+    const customOptions = {
+      ...options,
+      schemaConfig: customSchemaConfig,
+    };
+
+    // Mock credential exists
+    mockCtx.context.adapter.findOne.mockResolvedValueOnce({
+      id: "passkey-123",
+      userId: "user-123",
+      credentialId: "credential-123",
+      platform: "ios",
+      status: "active",
+    });
+
+    // Create endpoint with custom schema config
+    const endpoint = createRevokeEndpoint(customOptions);
+    const handler = (endpoint as any).handler as EndpointHandler;
+
+    // Call the handler
+    await handler(mockCtx as any);
+
+    // Verify credential lookup uses custom model name
+    expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
+      model: "customPasskeyTable",
+      where: [
+        { field: "credentialId", operator: "eq", value: "credential-123" },
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
+      ],
+    });
+
+    // Verify update was performed with custom model name
+    expect(mockCtx.context.adapter.update).toHaveBeenCalledWith({
+      model: "customPasskeyTable",
+      where: [{ field: "id", operator: "eq", value: "passkey-123" }],
+      update: expect.objectContaining({
+        status: "revoked",
+        revokedReason: "lost_device",
+      }),
+    });
+  });
+
   it("should use default reason if none provided", async () => {
     // Mock credential exists
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
       id: "passkey-123",
       userId: "user-123",
-      deviceId: "device-123",
+      credentialId: "credential-123",
       platform: "ios",
       status: "active",
     });
@@ -100,7 +156,7 @@ describe("revokePasskey endpoint", () => {
       ...mockCtx,
       body: {
         userId: "user-123",
-        deviceId: "device-123",
+        credentialId: "credential-123",
         // No reason provided
       },
     };
@@ -137,7 +193,7 @@ describe("revokePasskey endpoint", () => {
     expect(mockCtx.context.adapter.findOne).toHaveBeenCalledWith({
       model: "authPasskey",
       where: [
-        { field: "credentialId", operator: "eq", value: "device-123" },
+        { field: "credentialId", operator: "eq", value: "credential-123" },
         { field: "userId", operator: "eq", value: "user-123" },
         { field: "status", operator: "eq", value: "active" },
       ],
@@ -158,7 +214,7 @@ describe("revokePasskey endpoint", () => {
     mockCtx.context.adapter.findOne.mockResolvedValueOnce({
       id: "passkey-123",
       userId: "user-123",
-      deviceId: "device-123",
+      credentialId: "credential-123",
       platform: "ios",
       status: "active",
     });

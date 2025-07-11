@@ -8,7 +8,7 @@ import type { AuthContext, BetterAuthPlugin } from "better-auth/types";
 import { APIError } from "better-call";
 
 import { ERROR_CODES, ERROR_MESSAGES } from "../types/errors";
-import type { ExpoPasskeyOptions } from "../types/server";
+import type { ExpoPasskeyOptions, ResolvedSchemaConfig } from "../types/server";
 
 import {
   createAuthenticateEndpoint,
@@ -31,6 +31,19 @@ export function clearCleanupIntervals(): void {
 }
 
 /**
+ * Resolves schema configuration with defaults
+ */
+function resolveSchemaConfig(
+  options: ExpoPasskeyOptions,
+): ResolvedSchemaConfig {
+  return {
+    authPasskeyModel: options.schema?.authPasskey?.modelName || "authPasskey",
+    passkeyChallengeModel:
+      options.schema?.passkeyChallenge?.modelName || "passkeyChallenge",
+  };
+}
+
+/**
  * Creates an instance of the Expo Passkey server plugin with WebAuthn support
  * @param options Configuration options for the plugin
  * @returns BetterAuthPlugin instance
@@ -44,9 +57,13 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
     throw new Error("rpName and rpId are required options");
   }
 
-  // Configure endpoints with options
+  // Resolve schema configuration
+  const schemaConfig = resolveSchemaConfig(options);
+
+  // Configure endpoints with options and schema config
   const challengeEndpoint = createChallengeEndpoint({
     logger,
+    schemaConfig,
   });
 
   const registerEndpoint = createRegisterEndpoint({
@@ -54,20 +71,24 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
     rpId: options.rpId,
     origin: options.origin,
     logger,
+    schemaConfig,
   });
 
   const authenticateEndpoint = createAuthenticateEndpoint({
     rpId: options.rpId,
     origin: options.origin,
     logger,
+    schemaConfig,
   });
 
   const listEndpoint = createListEndpoint({
     logger,
+    schemaConfig,
   });
 
   const revokeEndpoint = createRevokeEndpoint({
     logger,
+    schemaConfig,
   });
 
   // Configure rate limits
@@ -78,8 +99,8 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
 
     // Database schema for plugin
     schema: {
-      authPasskey: {
-        modelName: "authPasskey",
+      [schemaConfig.authPasskeyModel]: {
+        modelName: schemaConfig.authPasskeyModel,
         fields: {
           userId: {
             type: "string",
@@ -143,8 +164,8 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
           },
         },
       },
-      passkeyChallenge: {
-        modelName: "passkeyChallenge",
+      [schemaConfig.passkeyChallengeModel]: {
+        modelName: schemaConfig.passkeyChallengeModel,
         fields: {
           userId: {
             type: "string",
@@ -186,7 +207,12 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
 
       // 1. Cleanup for inactive passkeys
       if (options.cleanup?.inactiveDays) {
-        const cleanupInterval = setupCleanupJob(ctx, options.cleanup, logger);
+        const cleanupInterval = setupCleanupJob(
+          ctx,
+          options.cleanup,
+          logger,
+          schemaConfig,
+        );
         if (cleanupInterval) {
           cleanupIntervals.push(cleanupInterval);
         }
@@ -198,7 +224,7 @@ export const expoPasskey = (options: ExpoPasskeyOptions): BetterAuthPlugin => {
 
         try {
           const result = await ctx.adapter.deleteMany({
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [{ field: "expiresAt", operator: "lt", value: now }],
           });
 

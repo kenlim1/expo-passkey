@@ -4,7 +4,7 @@
  */
 
 import type { AuthContext } from "better-auth/types";
-
+import type { ResolvedSchemaConfig } from "../../types";
 import type { Logger } from "./logger";
 
 export interface CleanupOptions {
@@ -28,6 +28,7 @@ export const setupCleanupJob = (
   ctx: AuthContext,
   options: CleanupOptions = {},
   logger: Logger,
+  schemaConfig: ResolvedSchemaConfig,
 ) => {
   const inactiveDays = options.inactiveDays ?? 30;
   const disableInterval = options.disableInterval ?? false;
@@ -49,7 +50,7 @@ export const setupCleanupJob = (
 
     try {
       const result = await ctx.adapter.updateMany({
-        model: "authPasskey",
+        model: schemaConfig.authPasskeyModel,
         where: [
           {
             field: "lastUsed",

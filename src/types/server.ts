@@ -6,6 +6,18 @@
 import { z } from "zod";
 
 /**
+ * Schema configuration for the Expo Passkey plugin
+ */
+export interface ExpoPasskeySchemaConfig {
+  authPasskey?: {
+    modelName?: string;
+  };
+  passkeyChallenge?: {
+    modelName?: string;
+  };
+}
+
+/**
  * Configuration options for the Expo Passkey server plugin
  */
 export interface ExpoPasskeyOptions {
@@ -21,6 +33,9 @@ export interface ExpoPasskeyOptions {
    * android:apk-key-hash:{base64url-encoded-hash}
    */
   origin?: string | string[];
+
+  /** Schema configuration for database models */
+  schema?: ExpoPasskeySchemaConfig;
 
   /** Rate limiting configuration */
   rateLimit?: {
@@ -51,6 +66,14 @@ export interface ExpoPasskeyOptions {
     enabled?: boolean;
     level?: "debug" | "info" | "warn" | "error";
   };
+}
+
+/**
+ * Internal configuration with resolved model names
+ */
+export interface ResolvedSchemaConfig {
+  authPasskeyModel: string;
+  passkeyChallengeModel: string;
 }
 
 /**

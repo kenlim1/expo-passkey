@@ -6,15 +6,18 @@
 import { createAuthEndpoint } from "better-auth/api";
 import { APIError } from "better-call";
 import crypto from "crypto";
-
+import type { ResolvedSchemaConfig } from "../../types";
 import type { Logger } from "../utils/logger";
 import { challengeSchema } from "../utils/schema";
 
 /**
  * Creates a WebAuthn challenge endpoint for registration and authentication
  */
-export const createChallengeEndpoint = (options: { logger: Logger }) => {
-  const { logger } = options;
+export const createChallengeEndpoint = (options: {
+  logger: Logger;
+  schemaConfig: ResolvedSchemaConfig;
+}) => {
+  const { logger, schemaConfig } = options;
 
   return createAuthEndpoint(
     "/expo-passkey/challenge",
@@ -100,10 +103,10 @@ export const createChallengeEndpoint = (options: { logger: Logger }) => {
 
         // Store challenge in database
         await ctx.context.adapter.create({
-          model: "passkeyChallenge",
+          model: schemaConfig.passkeyChallengeModel,
           data: {
             id: ctx.context.generateId({
-              model: "passkeyChallenge",
+              model: schemaConfig.passkeyChallengeModel,
               size: 32,
             }),
             userId,
