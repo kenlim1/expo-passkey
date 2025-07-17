@@ -15,7 +15,11 @@ import { isoBase64URL } from "@simplewebauthn/server/helpers";
 import { ERROR_CODES, ERROR_MESSAGES } from "../../types/errors";
 import type { Logger } from "../utils/logger";
 import { registerPasskeySchema } from "../utils/schema";
-import type { AuthPasskey, PasskeyChallenge } from "../../types/server";
+import type {
+  AuthPasskey,
+  PasskeyChallenge,
+  ResolvedSchemaConfig,
+} from "../../types/server";
 
 /**
  * Registration options interface for type safety
@@ -39,8 +43,9 @@ export const createRegisterEndpoint = (options: {
   rpId: string;
   origin?: string | string[];
   logger: Logger;
+  schemaConfig: ResolvedSchemaConfig;
 }) => {
-  const { rpName, rpId, origin, logger } = options;
+  const { rpName, rpId, origin, logger, schemaConfig } = options;
 
   // Convert to array of origins for consistency, or use empty array if undefined
   const expectedOrigins = origin
@@ -124,7 +129,7 @@ export const createRegisterEndpoint = (options: {
         // Get latest challenge for this user
         const challenges = await ctx.context.adapter.findMany<PasskeyChallenge>(
           {
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [
               { field: "userId", operator: "eq", value: userId },
               { field: "type", operator: "eq", value: "registration" },
@@ -236,7 +241,7 @@ export const createRegisterEndpoint = (options: {
           // Check if credential already exists
           const existingCredentials =
             await ctx.context.adapter.findMany<AuthPasskey>({
-              model: "authPasskey",
+              model: schemaConfig.authPasskeyModel,
               where: [
                 {
                   field: "credentialId",
@@ -295,7 +300,7 @@ export const createRegisterEndpoint = (options: {
             });
 
             await ctx.context.adapter.update({
-              model: "authPasskey",
+              model: schemaConfig.authPasskeyModel,
               where: [
                 { field: "id", operator: "eq", value: existingCredential.id },
               ],
@@ -316,10 +321,10 @@ export const createRegisterEndpoint = (options: {
           } else {
             // Create new passkey record if one doesn't exist
             await ctx.context.adapter.create({
-              model: "authPasskey",
+              model: schemaConfig.authPasskeyModel,
               data: {
                 id: ctx.context.generateId({
-                  model: "authPasskey",
+                  model: schemaConfig.authPasskeyModel,
                   size: 32,
                 }),
                 userId,
@@ -339,7 +344,7 @@ export const createRegisterEndpoint = (options: {
 
           // Delete the used challenge
           await ctx.context.adapter.delete({
-            model: "passkeyChallenge",
+            model: schemaConfig.passkeyChallengeModel,
             where: [{ field: "id", operator: "eq", value: storedChallenge.id }],
           });
 

@@ -142,6 +142,33 @@ describe("expoPasskey server plugin", () => {
     expect(plugin.$ERROR_CODES).toBe(ERROR_CODES.SERVER);
   });
 
+  it("should create a plugin with custom schema model names", () => {
+    const customOptions = {
+      ...validOptions,
+      schema: {
+        authPasskey: {
+          modelName: "customPasskeyTable",
+        },
+        passkeyChallenge: {
+          modelName: "customChallengeTable",
+        },
+      },
+    };
+
+    const plugin = expoPasskey(customOptions) as BetterAuthPlugin & {
+      schema: NonNullable<BetterAuthPlugin["schema"]>;
+    };
+
+    expect(plugin.schema.customPasskeyTable).toBeDefined();
+    expect(plugin.schema.customChallengeTable).toBeDefined();
+    expect(plugin.schema.customPasskeyTable.modelName).toBe(
+      "customPasskeyTable",
+    );
+    expect(plugin.schema.customChallengeTable.modelName).toBe(
+      "customChallengeTable",
+    );
+  });
+
   it("should throw error if required options are missing", () => {
     // @ts-expect-error - intentionally passing invalid options
     expect(() => expoPasskey({})).toThrow(
@@ -178,7 +205,43 @@ describe("expoPasskey server plugin", () => {
     expect(setupCleanupJob).toHaveBeenCalledWith(
       mockCtx,
       validOptions.cleanup,
-      expect.anything(),
+      expect.anything(), // logger
+      {
+        authPasskeyModel: "authPasskey",
+        passkeyChallengeModel: "passkeyChallenge",
+      }, // default schemaConfig
+    );
+  });
+
+  it("should initialize cleanup job with custom schema config", () => {
+    const customOptions = {
+      ...validOptions,
+      schema: {
+        authPasskey: {
+          modelName: "customPasskeyTable",
+        },
+        passkeyChallenge: {
+          modelName: "customChallengeTable",
+        },
+      },
+    };
+
+    const plugin = expoPasskey(customOptions);
+
+    // Call init if it exists
+    if (plugin.init) {
+      plugin.init(mockCtx);
+    }
+
+    // Expect the call with custom schema config
+    expect(setupCleanupJob).toHaveBeenCalledWith(
+      mockCtx,
+      customOptions.cleanup,
+      expect.anything(), // logger
+      {
+        authPasskeyModel: "customPasskeyTable",
+        passkeyChallengeModel: "customChallengeTable",
+      }, // custom schemaConfig
     );
   });
 

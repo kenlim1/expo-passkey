@@ -1,6 +1,7 @@
 import { APIError } from "better-call";
 
 import { createListEndpoint } from "../../../server/endpoints/list";
+import type { ResolvedSchemaConfig } from "../../../types/server";
 
 // Mock logger
 const mockLogger = {
@@ -10,12 +11,19 @@ const mockLogger = {
   error: jest.fn(),
 };
 
+// Default schema config
+const defaultSchemaConfig: ResolvedSchemaConfig = {
+  authPasskeyModel: "authPasskey",
+  passkeyChallengeModel: "passkeyChallenge",
+};
+
 type EndpointHandler = (ctx: any) => Promise<any>;
 
 describe("listPasskeys endpoint", () => {
   // Setup options for the endpoint
   const options = {
     logger: mockLogger,
+    schemaConfig: defaultSchemaConfig,
   };
 
   // Mock passkeys for database responses
@@ -23,7 +31,7 @@ describe("listPasskeys endpoint", () => {
     {
       id: "passkey-1",
       userId: "user-123",
-      deviceId: "device-1",
+      credentialId: "credential-1",
       platform: "ios",
       status: "active",
       lastUsed: "2023-02-01T00:00:00Z",
@@ -34,7 +42,7 @@ describe("listPasskeys endpoint", () => {
     {
       id: "passkey-2",
       userId: "user-123",
-      deviceId: "device-2",
+      credentialId: "credential-2",
       platform: "android",
       status: "active",
       lastUsed: "2023-01-15T00:00:00Z",
@@ -81,7 +89,7 @@ describe("listPasskeys endpoint", () => {
     // Call the handler
     await handler(mockCtx as any);
 
-    // Verify database query
+    // Verify database query uses default model name
     expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
       model: "authPasskey",
       where: [
@@ -119,6 +127,40 @@ describe("listPasskeys endpoint", () => {
     );
   });
 
+  it("should use custom schema config model names", async () => {
+    const customSchemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "customPasskeyTable",
+      passkeyChallengeModel: "customChallengeTable",
+    };
+
+    const customOptions = {
+      ...options,
+      schemaConfig: customSchemaConfig,
+    };
+
+    // Mock database response
+    mockCtx.context.adapter.findMany.mockResolvedValueOnce(mockPasskeys);
+
+    // Create endpoint with custom schema config
+    const endpoint = createListEndpoint(customOptions);
+    const handler = (endpoint as any).handler as EndpointHandler;
+
+    // Call the handler
+    await handler(mockCtx as any);
+
+    // Verify database query uses custom model name
+    expect(mockCtx.context.adapter.findMany).toHaveBeenCalledWith({
+      model: "customPasskeyTable",
+      where: [
+        { field: "userId", operator: "eq", value: "user-123" },
+        { field: "status", operator: "eq", value: "active" },
+      ],
+      sortBy: { field: "lastUsed", direction: "desc" },
+      limit: 11, // limit + 1 for pagination
+      offset: 0,
+    });
+  });
+
   it("should handle pagination correctly", async () => {
     // Create more mock passkeys than the limit
     const extraPasskeys = Array(11)
@@ -126,7 +168,7 @@ describe("listPasskeys endpoint", () => {
       .map((_, i) => ({
         id: `passkey-${i + 1}`,
         userId: "user-123",
-        deviceId: `device-${i + 1}`,
+        credentialId: `credential-${i + 1}`,
         platform: i % 2 === 0 ? "ios" : "android",
         status: "active",
         lastUsed: `2023-02-0${Math.min(i + 1, 9)}T00:00:00Z`,

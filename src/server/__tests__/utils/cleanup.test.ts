@@ -3,11 +3,14 @@
  */
 
 import { setupCleanupJob, type CleanupOptions } from "../../utils/cleanup";
-
+import type { ResolvedSchemaConfig } from "../../../types";
 import type { Logger } from "../../utils/logger";
 
 // Set up for each individual test
-const setupTest = (options?: CleanupOptions) => {
+const setupTest = (
+  options?: CleanupOptions,
+  customSchemaConfig?: ResolvedSchemaConfig,
+) => {
   // Create fresh mocks for each test
   const mockUpdateMany = jest.fn().mockResolvedValue(5);
   const mockAdapter = { updateMany: mockUpdateMany };
@@ -20,6 +23,14 @@ const setupTest = (options?: CleanupOptions) => {
     error: jest.fn(),
   };
 
+  // Default schema config
+  const defaultSchemaConfig: ResolvedSchemaConfig = {
+    authPasskeyModel: "authPasskey",
+    passkeyChallengeModel: "passkeyChallenge",
+  };
+
+  const schemaConfig = customSchemaConfig || defaultSchemaConfig;
+
   // Spy on setInterval
   const setIntervalSpy = jest.spyOn(global, "setInterval");
 
@@ -28,6 +39,7 @@ const setupTest = (options?: CleanupOptions) => {
     mockContext as any,
     options || {},
     mockLogger as Logger,
+    schemaConfig,
   );
 
   return {
@@ -37,6 +49,7 @@ const setupTest = (options?: CleanupOptions) => {
     mockLogger,
     setIntervalSpy,
     result,
+    schemaConfig,
   };
 };
 
@@ -53,7 +66,8 @@ describe("Cleanup utility", () => {
   });
 
   test("should setup the cleanup job with default options", () => {
-    const { mockUpdateMany, setIntervalSpy, result } = setupTest();
+    const { mockUpdateMany, setIntervalSpy, result, schemaConfig } =
+      setupTest();
 
     // Calculate expected cutoff date (30 days ago by default)
     const expectedCutoff = new Date("2023-01-01T00:00:00Z");
@@ -61,7 +75,7 @@ describe("Cleanup utility", () => {
 
     // Verify immediate cleanup was triggered with correct params
     expect(mockUpdateMany).toHaveBeenCalledWith({
-      model: "authPasskey",
+      model: schemaConfig.authPasskeyModel,
       where: [
         {
           field: "lastUsed",
@@ -89,7 +103,7 @@ describe("Cleanup utility", () => {
   });
 
   test("should respect the inactiveDays option", () => {
-    const { mockUpdateMany } = setupTest({ inactiveDays: 60 });
+    const { mockUpdateMany, schemaConfig } = setupTest({ inactiveDays: 60 });
 
     // Calculate expected cutoff date (60 days ago)
     const expectedCutoff = new Date("2023-01-01T00:00:00Z");
@@ -98,6 +112,7 @@ describe("Cleanup utility", () => {
     // Verify cutoff date is correct
     expect(mockUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        model: schemaConfig.authPasskeyModel,
         where: expect.arrayContaining([
           {
             field: "lastUsed",
@@ -107,6 +122,38 @@ describe("Cleanup utility", () => {
         ]),
       }),
     );
+  });
+
+  test("should use custom model names from schema config", () => {
+    const customSchemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "customPasskeyTable",
+      passkeyChallengeModel: "customChallengeTable",
+    };
+
+    const { mockUpdateMany } = setupTest({}, customSchemaConfig);
+
+    // Calculate expected cutoff date (30 days ago by default)
+    const expectedCutoff = new Date("2023-01-01T00:00:00Z");
+    expectedCutoff.setDate(expectedCutoff.getDate() - 30);
+
+    // Verify cleanup was triggered with custom model name
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      model: "customPasskeyTable",
+      where: [
+        {
+          field: "lastUsed",
+          operator: "lt",
+          value: expectedCutoff.toISOString(),
+        },
+        { field: "status", operator: "eq", value: "active" },
+      ],
+      update: {
+        status: "revoked",
+        revokedAt: new Date("2023-01-01T00:00:00Z").toISOString(),
+        revokedReason: "automatic_inactive",
+        updatedAt: new Date("2023-01-01T00:00:00Z").toISOString(),
+      },
+    });
   });
 
   test("should return early if inactiveDays is 0", () => {
@@ -167,8 +214,13 @@ describe("Cleanup utility", () => {
       error: jest.fn(),
     };
 
+    const schemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "authPasskey",
+      passkeyChallengeModel: "passkeyChallenge",
+    };
+
     // Call function
-    setupCleanupJob(mockContext as any, {}, mockLogger as Logger);
+    setupCleanupJob(mockContext as any, {}, mockLogger as Logger, schemaConfig);
 
     // Wait for promises to resolve
     await Promise.resolve();
@@ -220,5 +272,56 @@ describe("Cleanup utility", () => {
       // Restore environment
       process.env.NODE_ENV = originalNodeEnv;
     }
+  });
+
+  test("should warn and skip cleanup if adapter is not properly initialized", () => {
+    // Create a context with missing updateMany method
+    const mockAdapter = { findOne: jest.fn() }; // Missing updateMany
+    const mockContext = { adapter: mockAdapter };
+
+    const mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+
+    const schemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "authPasskey",
+      passkeyChallengeModel: "passkeyChallenge",
+    };
+
+    // Call function
+    setupCleanupJob(mockContext as any, {}, mockLogger as Logger, schemaConfig);
+
+    // Verify warning was logged
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      "Skipping cleanup: Database adapter not fully initialized",
+    );
+  });
+
+  test("should warn and skip cleanup if adapter is missing", () => {
+    // Create a context with missing adapter
+    const mockContext = {}; // No adapter
+
+    const mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+
+    const schemaConfig: ResolvedSchemaConfig = {
+      authPasskeyModel: "authPasskey",
+      passkeyChallengeModel: "passkeyChallenge",
+    };
+
+    // Call function
+    setupCleanupJob(mockContext as any, {}, mockLogger as Logger, schemaConfig);
+
+    // Verify warning was logged
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      "Skipping cleanup: Database adapter not fully initialized",
+    );
   });
 });

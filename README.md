@@ -51,13 +51,13 @@ See Expo Passkey in action on different platforms:
 - [Quick Start](#quick-start)
 - [Complete API Reference](#complete-api-reference)
 - [Database Schema](#database-schema)
+- [Custom Schema Configuration](#custom-schema-configuration)
 - [Cross-Platform Usage](#cross-platform-usage)
 - [Client Preferences](#client-preferences)
 - [Database Optimizations](#database-optimizations)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
 - [Error Handling](#error-handling)
-- [Migration from v0.1.x](#migration-from-v01x)
 - [License](#license)
 
 ## Overview
@@ -70,6 +70,7 @@ This plugin implements a comprehensive FIDO2/WebAuthn passkey solution that conn
 
 - ✅ **Cross-Platform Support**: Works on web browsers, iOS (16+), and Android (10+)
 - ✅ **Unified Table Structure**: Single table works across web, mobile, and all platforms
+- ✅ **Custom Schema Configuration**: Customize database table names to fit your existing structure
 - ✅ **Universal App Ready**: Perfect for Expo + react-native-web projects and separate frontend architectures
 - ✅ **Platform-Specific Optimization**: Native biometrics on mobile, WebAuthn in browsers
 - ✅ **Client-Controlled Preferences**: Specify attestation, user verification, and authenticator requirements
@@ -247,6 +248,25 @@ export const auth = betterAuth({
         "https://example.com",
         "android:apk-key-hash:<your-base64url-encoded-hash>"
       ]
+      // Optional settings
+      logger: {
+        enabled: true,           // Enable detailed logging (default: true in dev)
+        level: "debug",          // Log level: "debug", "info", "warn", "error"
+      },
+      rateLimit: {
+        registerWindow: 300,     // Time window in seconds for rate limiting
+        registerMax: 3,          // Max registration attempts in window
+        authenticateWindow: 60,  // Time window for auth attempts
+        authenticateMax: 5,      // Max auth attempts in window
+      },
+      cleanup: {
+        inactiveDays: 30,        // Auto-revoke passkeys after 30 days of inactivity
+        disableInterval: false,  // Set to true in serverless environments
+      },
+      schema: {
+        authPasskey: { modelName: "user_passkeys" },
+        passkeyChallenge: { modelName: "auth_challenges" }
+  }
     })
   ]
 });
@@ -430,9 +450,6 @@ if (Platform.OS === 'web') {
 }
 ```
 
-### Server API
-
-The server API remains the same as v0.1.x, with enhanced support for client preferences and cross-platform credential syncing.
 
 ## Cross-Platform Usage
 
@@ -673,6 +690,42 @@ The plugin uses a unified table structure that works seamlessly across all platf
 | `expiresAt`           | `string`                | -       | Time when the challenge expires                      |
 | `registrationOptions` | `string` (optional)     | -       | JSON string containing client registration preferences |
 
+## Custom Schema Configuration
+
+You can customize the database table names to fit your existing database structure or naming conventions:
+
+### Basic Configuration
+
+```typescript
+import { betterAuth } from "better-auth";
+import { expoPasskey } from "expo-passkey/server";
+
+export const auth = betterAuth({
+  plugins: [
+    expoPasskey({
+      rpId: "example.com",
+      rpName: "Your App Name",
+      // ✨ Custom schema configuration
+      schema: {
+        authPasskey: {
+          modelName: "user_passkeys" // Custom table name for passkeys
+        },
+        passkeyChallenge: {
+          modelName: "auth_challenges" // Custom table name for challenges
+        }
+      }
+    })
+  ]
+});
+```
+### Default Table Names
+
+If no custom schema is provided, the plugin uses these default table names:
+
+- **Passkeys**: `authPasskey`
+- **Challenges**: `passkeyChallenge`
+
+
 ## Database Optimizations
 
 Optimizing database performance is essential to get the best out of the Expo Passkey plugin.
@@ -730,50 +783,6 @@ Optimizing database performance is essential to get the best out of the Expo Pas
 - **Attestation Requirements**: Direct attestation may not be available on all devices or platforms
 - **Hardware Key Support**: Some authenticator selection criteria may not apply to hardware keys
 
-## Migration from v0.1.x
-
-If you're upgrading from v0.1.x, you'll need to migrate your data:
-
-### Database Migration
-
-1. **Rename Table**: Rename `mobilePasskey` table to `authPasskey`
-2. **Add registrationOptions Field**: Add `registrationOptions` column to `passkeyChallenge` table
-3. **Update References**: Update any custom code that references the old table name
-4. **Unified Schema**: The new schema supports all platforms in a single table
-
-```sql
--- Migration script
-ALTER TABLE mobilePasskey RENAME TO authPasskey;
-ALTER TABLE passkeyChallenge ADD COLUMN registrationOptions TEXT NULL;
-```
-
-### Code Changes
-
-The API remains largely the same, but now supports client preferences:
-
-```typescript
-// Old (v0.1.x) - basic registration
-await registerPasskey({
-  userId: "user123",
-  userName: "user@example.com",
-  rpId: "example.com",
-  rpName: "My App"
-});
-
-// New (v0.2.x) - with client preferences
-await registerPasskey({
-  userId: "user123",
-  userName: "user@example.com",
-  rpId: "example.com",
-  rpName: "My App",
-  // ✨ NEW: Client preferences
-  attestation: "direct",
-  authenticatorSelection: {
-    userVerification: "required",
-    residentKey: "required"
-  }
-});
-```
 
 ## Security Considerations
 
