@@ -97,11 +97,11 @@ export function createRegistrationOptions(
     attestation?: "none" | "indirect" | "direct" | "enterprise";
     authenticatorSelection?: AuthenticatorSelectionCriteria;
     excludeCredentials?: Array<{ id: string; type: "public-key" }>;
-  },
+  }
 ): PublicKeyCredentialCreationOptions {
   // Convert userId to a byte array, then to base64url
   const userIdBuffer = new TextEncoder().encode(userId);
-  const userIdBase64 = bufferToBase64url(userIdBuffer);
+  const userIdBase64 = bufferToBase64url(userIdBuffer.buffer);
 
   // Default authenticator selection to require platform authenticator (biometric)
   const defaultAuthenticatorSelection: AuthenticatorSelectionCriteria = {
@@ -151,7 +151,7 @@ export function createAuthenticationOptions(
     timeout?: number;
     userVerification?: "required" | "preferred" | "discouraged";
     allowCredentials?: Array<{ id: string; type: "public-key" }>;
-  },
+  }
 ): PublicKeyCredentialRequestOptions {
   return {
     challenge,

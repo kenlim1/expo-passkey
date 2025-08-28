@@ -312,7 +312,7 @@ export const createAuthenticateEndpoint = (options: {
         }
       } catch (error) {
         logger.error("Authentication error:", error);
-        if (error instanceof APIError) throw error;
+        if (error instanceof APIError) {throw error;}
         throw new APIError("UNAUTHORIZED", {
           code: ERROR_CODES.SERVER.AUTHENTICATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.AUTHENTICATION_FAILED],

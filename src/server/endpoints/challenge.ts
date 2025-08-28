@@ -133,7 +133,7 @@ export const createChallengeEndpoint = (options: {
         });
       } catch (error) {
         logger.error("Failed to generate challenge:", error);
-        if (error instanceof APIError) throw error;
+        if (error instanceof APIError) {throw error;}
         throw new APIError("INTERNAL_SERVER_ERROR", {
           code: "CHALLENGE_GENERATION_FAILED",
           message: "Failed to generate challenge",

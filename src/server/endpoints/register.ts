@@ -384,7 +384,7 @@ export const createRegisterEndpoint = (options: {
         }
       } catch (error) {
         logger.error("Registration error:", error);
-        if (error instanceof APIError) throw error;
+        if (error instanceof APIError) {throw error;}
         throw new APIError("BAD_REQUEST", {
           code: ERROR_CODES.SERVER.REGISTRATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.REGISTRATION_FAILED],

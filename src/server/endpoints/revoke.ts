@@ -114,7 +114,7 @@ export const createRevokeEndpoint = (options: {
         return ctx.json({ success: true });
       } catch (error) {
         logger.error("Failed to revoke passkey", error);
-        if (error instanceof APIError) throw error;
+        if (error instanceof APIError) {throw error;}
         throw new APIError("BAD_REQUEST", {
           code: ERROR_CODES.SERVER.REVOCATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.REVOCATION_FAILED],

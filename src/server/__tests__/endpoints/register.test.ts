@@ -4,7 +4,7 @@ import { APIError } from "better-call";
 jest.mock("@simplewebauthn/server", () => ({
   verifyRegistrationResponse: jest.fn(),
   isoBase64URL: {
-    fromBuffer: jest.fn((buffer) => "mocked-base64url"),
+    fromBuffer: jest.fn((_buffer) => "mocked-base64url"),
   },
 }));
 
@@ -98,7 +98,7 @@ describe("registerPasskey endpoint", () => {
 
     // Mock create to throw error
     mockCtx.context.adapter.create.mockRejectedValueOnce(
-      new Error("Database error"),
+      new Error("Database error")
     );
 
     // Create endpoint and get handler using type assertion
@@ -111,7 +111,7 @@ describe("registerPasskey endpoint", () => {
     // Verify error was logged
     expect(mockLogger.error).toHaveBeenCalledWith(
       "Registration error:",
-      expect.any(Error),
+      expect.any(Error)
     );
   });
 
@@ -157,7 +157,7 @@ describe("registerPasskey endpoint", () => {
 
     // Mock database operations to fail at the create step so we can see both findMany calls
     mockCtx.context.adapter.create.mockRejectedValueOnce(
-      new Error("Database error"),
+      new Error("Database error")
     );
 
     // Create endpoint with custom schema config

@@ -123,7 +123,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             timeout?: number;
           };
         },
-        fetchOptions?: BetterFetchOption,
+        fetchOptions?: BetterFetchOption
       ): Promise<ChallengeResult> => {
         try {
           const { data: challengeData, error: challengeError } =
@@ -144,7 +144,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           throw challengeError
             ? new Error(
                 challengeError.message ||
-                  `Failed to get challenge: ${challengeError.statusText}`,
+                  `Failed to get challenge: ${challengeError.statusText}`
               )
             : new Error("Failed to get challenge");
         } catch (error) {
@@ -178,14 +178,14 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             timeout?: number;
             metadata?: Partial<PasskeyMetadata>;
           },
-          fetchOptions?: BetterFetchOption,
+          fetchOptions?: BetterFetchOption
         ): Promise<RegisterPasskeyResult> => {
           try {
             const isSupported = await client.isWebAuthnSupported();
             if (!isSupported) {
               throw new PasskeyError(
                 ERROR_CODES.WEBAUTHN.NOT_SUPPORTED,
-                "WebAuthn is not supported on this browser",
+                "WebAuthn is not supported on this browser"
               );
             }
 
@@ -232,7 +232,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   userVerification: "preferred",
                   residentKey: "preferred",
                 },
-              },
+              }
             );
 
             // Start registration with WebAuthn browser
@@ -260,7 +260,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                     },
                   },
                   ...fetchOptions,
-                },
+                }
               );
 
             if (registrationData) {
@@ -287,14 +287,14 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             userVerification?: "required" | "preferred" | "discouraged";
             metadata?: Partial<PasskeyMetadata>;
           },
-          fetchOptions?: BetterFetchOption,
+          fetchOptions?: BetterFetchOption
         ): Promise<AuthenticatePasskeyResult> => {
           try {
             const isSupported = await client.isWebAuthnSupported();
             if (!isSupported) {
               throw new PasskeyError(
                 ERROR_CODES.WEBAUTHN.NOT_SUPPORTED,
-                "WebAuthn is not supported on this browser",
+                "WebAuthn is not supported on this browser"
               );
             }
 
@@ -325,7 +325,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
               {
                 timeout: data?.timeout || client.getOptions().timeout,
                 userVerification: data?.userVerification || "preferred",
-              },
+              }
             );
 
             // Start authentication with WebAuthn browser
@@ -349,7 +349,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                   },
                   credentials: "include",
                   ...fetchOptions,
-                },
+                }
               );
 
             if (authData) {
@@ -360,7 +360,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             throw authError
               ? new Error(
                   authError.message ||
-                    `Authentication failed: ${authError.statusText}`,
+                    `Authentication failed: ${authError.statusText}`
                 )
               : new Error("Authentication failed");
           } catch (error) {
@@ -380,13 +380,13 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             limit?: number;
             offset?: number;
           },
-          fetchOptions?: BetterFetchOption,
+          fetchOptions?: BetterFetchOption
         ): Promise<ListPasskeysResult> => {
           try {
             if (!data.userId) {
               throw new PasskeyError(
                 ERROR_CODES.SERVER.USER_NOT_FOUND,
-                "userId is required",
+                "userId is required"
               );
             }
 
@@ -405,7 +405,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                     offset: data.offset?.toString(),
                   },
                   ...fetchOptions,
-                },
+                }
               );
 
             if (listData) {
@@ -415,7 +415,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             throw listError
               ? new Error(
                   listError.message ||
-                    `Failed to retrieve passkeys: ${listError.statusText}`,
+                    `Failed to retrieve passkeys: ${listError.statusText}`
                 )
               : new Error("Failed to retrieve passkeys");
           } catch (error) {
@@ -438,7 +438,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             credentialId: string;
             reason?: string;
           },
-          fetchOptions?: BetterFetchOption,
+          fetchOptions?: BetterFetchOption
         ): Promise<RevokePasskeyResult> => {
           try {
             const { data: revokeData, error: revokeError } = await $fetch<{
@@ -460,7 +460,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
             throw revokeError
               ? new Error(
                   revokeError.message ||
-                    `Failed to revoke passkey: ${revokeError.statusText}`,
+                    `Failed to revoke passkey: ${revokeError.statusText}`
                 )
               : new Error("Failed to revoke passkey");
           } catch (error) {
@@ -476,7 +476,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
          */
         checkPasskeyRegistration: async (
           userId: string,
-          fetchOptions?: BetterFetchOption,
+          fetchOptions?: BetterFetchOption
         ): Promise<PasskeyRegistrationCheckResult> => {
           try {
             const webAuthnSupported = await client.isWebAuthnSupported();
@@ -501,21 +501,21 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                     limit: "50",
                   },
                   ...fetchOptions,
-                },
+                }
               );
 
             if (!passkeysData?.passkeys) {
               throw passkeysError
                 ? new Error(
                     passkeysError.message ||
-                      `Failed to retrieve passkey list: ${passkeysError.statusText}`,
+                      `Failed to retrieve passkey list: ${passkeysError.statusText}`
                   )
                 : new Error("Failed to retrieve passkey list");
             }
 
             const passkeys = passkeysData.passkeys;
             const credentialIds = passkeys.map(
-              (pk: { credentialId: string }) => pk.credentialId,
+              (pk: { credentialId: string }) => pk.credentialId
             );
 
             return {
@@ -558,7 +558,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
         },
 
         hasUserPasskeysRegistered: async (
-          _userId: string,
+          _userId: string
         ): Promise<boolean> => {
           return false;
         },
@@ -585,7 +585,7 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
           onError: async (context: ErrorContext) => {
             if (context.response?.status === 401) {
               console.warn(
-                "[ExpoPasskey] Authentication error in Expo Passkey plugin",
+                "[ExpoPasskey] Authentication error in Expo Passkey plugin"
               );
             }
           },
@@ -607,18 +607,24 @@ export const expoPasskeyClient = (options: ExpoPasskeyClientOptions = {}) => {
                 (options.headers as Array<[string, string]>).forEach(
                   ([key, value]) => {
                     headers[key] = value;
-                  },
+                  }
                 );
               } else if (
                 typeof options.headers === "object" &&
-                options.headers.forEach
+                "forEach" in options.headers &&
+                typeof (options.headers as unknown as { forEach: unknown })
+                  .forEach === "function"
               ) {
                 // Handle mock Headers object with forEach method
-                (options.headers as any).forEach(
-                  (value: string, key: string) => {
-                    headers[key] = value;
-                  },
-                );
+                (
+                  options.headers as unknown as {
+                    forEach: (
+                      callback: (value: string, key: string) => void
+                    ) => void;
+                  }
+                ).forEach((value: string, key: string) => {
+                  headers[key] = value;
+                });
               } else if (typeof options.headers === "object") {
                 // Handle plain object
                 Object.assign(headers, options.headers);
