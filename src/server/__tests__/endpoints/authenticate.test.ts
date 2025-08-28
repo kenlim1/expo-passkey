@@ -57,8 +57,8 @@ describe("authenticatePasskey endpoint", () => {
     request: {
       headers: {
         get: jest.fn((header) => {
-          if (header === "user-agent") return "test-user-agent";
-          if (header === "x-forwarded-for") return "127.0.0.1";
+          if (header === "user-agent") {return "test-user-agent";}
+          if (header === "x-forwarded-for") {return "127.0.0.1";}
           return null;
         }),
       },

@@ -73,7 +73,7 @@ export async function checkBiometricSupport(): Promise<BiometricSupportInfo> {
     // This is the final check after platform requirements are met
     let nativePasskeySupported = false;
     try {
-      // Use the new ExpoPasskeyModule directly
+      // Use the ExpoPasskeyModule directly
       nativePasskeySupported = ExpoPasskeyModule.isPasskeySupported();
     } catch (error) {
       console.warn(
