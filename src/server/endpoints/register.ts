@@ -136,7 +136,7 @@ export const createRegisterEndpoint = (options: {
             ],
             sortBy: { field: "createdAt", direction: "desc" },
             limit: 1,
-          },
+          }
         );
 
         const storedChallenge = challenges[0];
@@ -163,16 +163,16 @@ export const createRegisterEndpoint = (options: {
         if (storedChallenge.registrationOptions) {
           try {
             registrationOptions = JSON.parse(
-              storedChallenge.registrationOptions,
+              storedChallenge.registrationOptions
             );
             logger.debug(
               "Using stored registration options:",
-              registrationOptions,
+              registrationOptions
             );
           } catch (parseError) {
             logger.warn(
               "Failed to parse stored registration options, using defaults:",
-              parseError,
+              parseError
             );
             // Continue with defaults
           }
@@ -210,8 +210,9 @@ export const createRegisterEndpoint = (options: {
           };
 
           // Verify the registration response
-          const verification =
-            await verifyRegistrationResponse(verificationOptions);
+          const verification = await verifyRegistrationResponse(
+            verificationOptions
+          );
 
           if (!verification.verified || !verification.registrationInfo) {
             throw new Error("Verification failed");
@@ -339,6 +340,7 @@ export const createRegisterEndpoint = (options: {
                 updatedAt: now,
                 metadata: JSON.stringify(enhancedMetadata),
               },
+              forceAllowId: true,
             });
           }
 
@@ -384,12 +386,14 @@ export const createRegisterEndpoint = (options: {
         }
       } catch (error) {
         logger.error("Registration error:", error);
-        if (error instanceof APIError) {throw error;}
+        if (error instanceof APIError) {
+          throw error;
+        }
         throw new APIError("BAD_REQUEST", {
           code: ERROR_CODES.SERVER.REGISTRATION_FAILED,
           message: ERROR_MESSAGES[ERROR_CODES.SERVER.REGISTRATION_FAILED],
         });
       }
-    },
+    }
   );
 };
