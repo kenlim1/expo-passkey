@@ -4,5 +4,5 @@
  * @module expo-passkey/server
  */
 
-export { ERROR_CODES } from "../types/errors";
+export { ERROR_CODES } from "../types/errors.js";
 export { expoPasskey } from "./core";
