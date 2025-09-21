@@ -5,4 +5,4 @@
  */
 
 export { ERROR_CODES } from "../types/errors.js";
-export { expoPasskey } from "./core";
+export { expoPasskey } from "./core.js";
